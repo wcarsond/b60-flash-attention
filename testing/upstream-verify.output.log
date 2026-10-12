@@ -1,0 +1,21 @@
+upstream verify 2026-09-26T20:07:20  clean rerun of the contaminated 12:16 bench; gate 5297/5297 stands from that run
+  bin: <home>\llama.cpp-b60\build-upstream\bin\Release
+  card: free (router empty, ollama empty, no llama process)
+  build: 2145525 (50)
+  bench pp512 d0: 1839 tok/s    tg32 d0: 96 tok/s
+  bench pp512 d8192: 580 tok/s    tg32 d8192: 71 tok/s
+  bench pp512 d16384: 340 tok/s    tg32 d16384: 56 tok/s
+  bench pp512 d32768: 186 tok/s    tg32 d32768: 40 tok/s
+  took 173s
+  raw:
+    | model                          |       size |     params | backend    | ngl |  fa |            test |                  t/s |
+    | ------------------------------ | ---------: | ---------: | ---------- | --: | --: | --------------: | -------------------: |
+    | qwen3moe 30B.A3B Q3_K - Medium |  12.85 GiB |    30.53 B | Vulkan     |  99 |   1 |           pp512 |       1839.35 � 0.00 |
+    | qwen3moe 30B.A3B Q3_K - Medium |  12.85 GiB |    30.53 B | Vulkan     |  99 |   1 |            tg32 |         96.09 � 0.00 |
+    | qwen3moe 30B.A3B Q3_K - Medium |  12.85 GiB |    30.53 B | Vulkan     |  99 |   1 |   pp512 @ d8192 |        580.49 � 0.00 |
+    | qwen3moe 30B.A3B Q3_K - Medium |  12.85 GiB |    30.53 B | Vulkan     |  99 |   1 |    tg32 @ d8192 |         70.60 � 0.00 |
+    | qwen3moe 30B.A3B Q3_K - Medium |  12.85 GiB |    30.53 B | Vulkan     |  99 |   1 |  pp512 @ d16384 |        339.86 � 0.00 |
+    | qwen3moe 30B.A3B Q3_K - Medium |  12.85 GiB |    30.53 B | Vulkan     |  99 |   1 |   tg32 @ d16384 |         56.14 � 0.00 |
+    | qwen3moe 30B.A3B Q3_K - Medium |  12.85 GiB |    30.53 B | Vulkan     |  99 |   1 |  pp512 @ d32768 |        186.00 � 0.00 |
+    | qwen3moe 30B.A3B Q3_K - Medium |  12.85 GiB |    30.53 B | Vulkan     |  99 |   1 |   tg32 @ d32768 |         39.68 � 0.00 |
+

@@ -1,0 +1,72 @@
+kv-slice 2026-09-26T20:25:45
+build 2026-09-26T20:25:45
+  cmake exit 1, 1 error lines, 13s
+    LINK : fatal error LNK1104: cannot open file '<home>\llama.cpp-b60\build-vk\bin\Release\ggml-vulkan.dll' [<home>\llama.cpp-b60\build-vk\ggml\src\ggml-vulkan\ggml-vulkan.vcxproj]
+kv-slice 2026-09-26T20:27:04
+router stopped
+build 2026-09-26T20:27:06
+  cmake exit 0, 0 error lines, 6s
+  ggml-vulkan.dll 09/26/2026 20:27:08
+gate [GGML_VK_FA_KV_SLICE=4 GGML_VK_FA_KV_SLICE_MIN=32 GGML_VK_FA_KV_SLICE_Z=1]: 5297/5297 tests passed  slice-announce=1  (782s)
+stock (patched cm1x8 sg2)    pp: d0  1854  8K   588  16K   343  32K   188   tg: d0  98  8K  70  16K  57  32K  40   (173s)
+slice 4, x order             pp: d0  1845  8K   643  16K   383  32K   211   tg: d0  98  8K  70  16K  56  32K  40   (160s)
+    ggml_vulkan: FA KV slice override: split_k=4 slice_in_z=0 (N=512 KV=4096 Tr=32 heads=32)
+slice 2, z order             pp: d0  1845  8K   629  16K   367  32K   199   tg: d0  98  8K  70  16K  56  32K  39   (164s)
+    ggml_vulkan: FA KV slice override: split_k=2 slice_in_z=1 (N=512 KV=4096 Tr=32 heads=32)
+slice 4, z order             pp: d0  1820  8K   639  16K   386  32K   215   tg: d0  97  8K  70  16K  55  32K  40   (159s)
+    ggml_vulkan: FA KV slice override: split_k=4 slice_in_z=1 (N=512 KV=4096 Tr=32 heads=32)
+slice 8, z order             pp: d0  1845  8K   648  16K   395  32K   221   tg: d0  99  8K  71  16K  57  32K  40   (156s)
+    ggml_vulkan: FA KV slice override: split_k=8 slice_in_z=1 (N=512 KV=4096 Tr=32 heads=32)
+stock, q8_0 KV cache         pp: d0  1821  8K   593  16K   338  32K   187   tg: d0  89  8K  31  16K  19  32K  11   (176s)
+slice 4 z, q8_0 KV cache     pp: d0  1809  8K   627  16K   378  32K   212   tg: d0  90  8K  32  16K  19  32K  11   (162s)
+    ggml_vulkan: FA KV slice override: split_k=4 slice_in_z=1 (N=512 KV=4096 Tr=32 heads=32)
+done 2026-09-26T20:59:30
+starting llama-server (router) on 8082 ...
+router up on 8082; models: gemma4-e4b, granite4-32b-a9b, omnicoder-9b, qwen2.5-coder-14b, qwen2.5-coder-7b, qwen2.5-coder-7b-q8, qwen3.5-9b, qwen3-vl-8b, qwen-coder-30b
+kv-slice run 2 2026-09-26T21:03:29: slice count knee, x order
+slice 8, x order             pp: d0  1850  8K   638  16K   385  32K   215   tg: d0  98  8K  70  16K  57  32K  40   (159s)
+    ggml_vulkan: FA KV slice override: split_k=8 slice_in_z=0 (N=512 KV=4096 Tr=32 heads=32)
+slice 16, x order            pp: d0  1851  8K   627  16K   382  32K   213   tg: d0  98  8K  71  16K  55  32K  40   (161s)
+    ggml_vulkan: FA KV slice override: split_k=16 slice_in_z=0 (N=512 KV=4096 Tr=32 heads=32)
+slice 32, x order            pp: d0  1841  8K   594  16K   371  32K   212   tg: d0  98  8K  70  16K  56  32K  40   (164s)
+    ggml_vulkan: FA KV slice override: split_k=32 slice_in_z=0 (N=512 KV=4096 Tr=32 heads=32)
+done run 2 2026-09-26T21:11:34
+find-best-slice 2026-09-26T21:27:02  model sha256-69cd7578d77dffc0b17e34bad9ef998d08ae0e20ccceef21bad4e7eb3d8c553b  slices 2,4,8,16  depths 8192,16384,32768
+stock                        pp: d0        8K   587  16K   341  32K   187   tg: d0      8K  70  16K  57  32K  40   (172s)
+slice 2                      pp: d0        8K   631  16K   367  32K   202   tg: d0      8K  70  16K  56  32K  39   (162s)
+    ggml_vulkan: FA KV slice override: split_k=2 slice_in_z=0 (N=512 KV=4096 Tr=32 heads=32)
+slice 4                      pp: d0        8K   631  16K   381  32K   210   tg: d0      8K  70  16K  57  32K  40   (158s)
+    ggml_vulkan: FA KV slice override: split_k=4 slice_in_z=0 (N=512 KV=4096 Tr=32 heads=32)
+slice 8                      pp: d0        8K   642  16K   387  32K   215   tg: d0      8K  70  16K  57  32K  40   (157s)
+    ggml_vulkan: FA KV slice override: split_k=8 slice_in_z=0 (N=512 KV=4096 Tr=32 heads=32)
+slice 16                     pp: d0        8K   626  16K   384  32K   215   tg: d0      8K  70  16K  56  32K  40   (158s)
+    ggml_vulkan: FA KV slice override: split_k=16 slice_in_z=0 (N=512 KV=4096 Tr=32 heads=32)
+  winner: slice 8 (best slice 8 at +11.6% pp, tg worst 0%) -> <home>\models-b60\tuning.json
+kv-slice run 3 2026-09-26T21:54:07: gate the deployed setting (slice 8, x order) on small shapes
+gate [GGML_VK_FA_KV_SLICE=8 GGML_VK_FA_KV_SLICE_MIN=32 GGML_VK_FA_KV_SLICE_Z=0]: 5297/5297 tests passed  slice-announce=1  (545s)
+kv-slice run 3 2026-09-26T22:03:11: pp128 at depth 0 and 16K, -ub 128 -b 128, -r 3
+stock pp128                  pp: d0        8K        16K        32K         tg: d0  97  8K      16K  58  32K       (78s)
+slice 4 pp128                pp: d0        8K        16K        32K         tg: d0  98  8K      16K  58  32K       (70s)
+    ggml_vulkan: FA KV slice override: split_k=4 slice_in_z=0 (N=128 KV=4096 Tr=8 heads=32)
+slice 8 pp128                pp: d0        8K        16K        32K         tg: d0  99  8K      16K  58  32K       (69s)
+    ggml_vulkan: FA KV slice override: split_k=8 slice_in_z=0 (N=128 KV=4096 Tr=8 heads=32)
+kv-slice run 3 2026-09-26T22:06:48: pp2048 at depth 0 and 16K, -ub 2048 -b 2048, -r 3
+stock pp2048                 pp: d0        8K        16K        32K         tg: d0  99  8K      16K  58  32K       (75s)
+slice 4 pp2048               pp: d0        8K        16K        32K         tg: d0  99  8K      16K  58  32K       (76s)
+    ggml_vulkan: FA KV slice override: split_k=4 slice_in_z=0 (N=2048 KV=4096 Tr=128 heads=32)
+slice 8 pp2048               pp: d0        8K        16K        32K         tg: d0  99  8K      16K  58  32K       (76s)
+    ggml_vulkan: FA KV slice override: split_k=8 slice_in_z=0 (N=2048 KV=4096 Tr=128 heads=32)
+done run 3 2026-09-26T22:10:35
+kv-slice run 3b 2026-09-26T22:14:23: pp128 at depth 0 and 16K, -ub 128 -b 128, -r 3 (parser fixed, raw kept)
+stock pp128                  pp: d0   841  8K        16K   236  32K         tg: d0  99  8K      16K  58  32K       (78s)
+slice 4 pp128                pp: d0   842  8K        16K   294  32K         tg: d0  99  8K      16K  58  32K       (70s)
+    ggml_vulkan: FA KV slice override: split_k=4 slice_in_z=0 (N=128 KV=4096 Tr=8 heads=32)
+slice 8 pp128                pp: d0   841  8K        16K   310  32K         tg: d0  99  8K      16K  58  32K       (69s)
+    ggml_vulkan: FA KV slice override: split_k=8 slice_in_z=0 (N=128 KV=4096 Tr=8 heads=32)
+kv-slice run 3b 2026-09-26T22:18:00: pp2048 at depth 0 and 16K, -ub 2048 -b 2048, -r 3 (parser fixed, raw kept)
+stock pp2048                 pp: d0  2155  8K        16K   395  32K         tg: d0  99  8K      16K  58  32K       (75s)
+slice 4 pp2048               pp: d0  2156  8K        16K   395  32K         tg: d0  98  8K      16K  58  32K       (76s)
+    ggml_vulkan: FA KV slice override: split_k=4 slice_in_z=0 (N=2048 KV=4096 Tr=128 heads=32)
+slice 8 pp2048               pp: d0  2155  8K        16K   399  32K         tg: d0  99  8K      16K  58  32K       (76s)
+    ggml_vulkan: FA KV slice override: split_k=8 slice_in_z=0 (N=2048 KV=4096 Tr=128 heads=32)
+done run 3b 2026-09-26T22:21:47

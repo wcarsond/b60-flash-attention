@@ -1,0 +1,67 @@
+﻿ggml_vulkan: Found 1 Vulkan devices:
+ggml_vulkan: 0 = Intel(R) Arc(TM) Pro B60 Graphics (Intel Corporation) | uma: 0 | fp16: 1 | bf16: 0 | fp4: 0 | warp size: 32 | shared memory: 49152 | int dot: 1 | matrix cores: KHR_coopmat
+----------------
+| model                          |       size |     params | backend    | ngl |  fa |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | --: | --: | --------------: | -------------------: |
+Vulkan Timings:
+ADD: 48 x 26.947 us = 1293.47 us
+FLASH_ATTN_EXT dst(128,32,512,1),  q(128,512,32,1),  k(128,512,4,1),  v(128,512,4,1),  m(512,512,1,1): 48 x 461.741 us = 22163.6 us (9301.68 GFLOPS/s)
+GET_ROWS: 2 x 5.156 us = 10.312 us
+GLU: 48 x 79.957 us = 3837.94 us
+MUL: 47 x 198.535 us = 9331.18 us
+MULTI_ADD ADD: 48 x 148.713 us = 7138.26 us
+MUL_MAT f32 m=128 n=512 k=2048: 47 x 33.143 us = 1557.74 us (8097.22 GFLOPS/s)
+MUL_MAT q4_K m=2048 n=512 k=4096: 35 x 242.386 us = 8483.53 us (35434.7 GFLOPS/s)
+MUL_MAT q4_K m=4096 n=512 k=2048: 43 x 287.035 us = 12342.5 us (29919.1 GFLOPS/s)
+MUL_MAT q4_K m=512 n=512 k=2048: 86 x 103.626 us = 8911.89 us (10359.1 GFLOPS/s)
+MUL_MAT q5_K m=2048 n=512 k=4096: 3 x 259.582 us = 778.748 us (33087.3 GFLOPS/s)
+MUL_MAT q5_K m=4096 n=512 k=2048: 5 x 242.916 us = 1214.58 us (35353.1 GFLOPS/s)
+MUL_MAT q5_K m=512 n=512 k=2048: 10 x 46.968 us = 469.683 us (22855.4 GFLOPS/s)
+MUL_MAT q6_K m=2048 n=512 k=4096: 10 x 804.718 us = 8047.18 us (10673.2 GFLOPS/s)
+MUL_MAT_ID q3_K m=2048 n=8 k=768 n_expert=128 batch=512: 36 x 1474.77 us = 53091.7 us (8731.2 GFLOPS/s)
+MUL_MAT_ID q3_K m=768 n=8 k=2048 n_expert=128 batch=512: 94 x 1293.76 us = 121614 us (9956.8 GFLOPS/s)
+MUL_MAT_ID q4_K m=2048 n=8 k=768 n_expert=128 batch=512: 11 x 1011.33 us = 11124.6 us (12732.3 GFLOPS/s)
+MUL_MAT_ID_MUL MUL_MAT_ID_VEC q4_K m=2048 n=8 k=768 n_expert=128: 1 x 31.197 us = 31.197 us (806.149 GFLOPS/s)
+MUL_MAT_ID_VEC q3_K m=768 n=8 k=2048 n_expert=128: 2 x 34.088 us = 68.176 us (738.08 GFLOPS/s)
+MUL_MAT_VEC f32 m=128 n=1 k=2048: 1 x 7.604 us = 7.604 us (68.9321 GFLOPS/s)
+MUL_MAT_VEC q6_K m=151936 n=1 k=2048: 1 x 713.593 us = 713.593 us (871.895 GFLOPS/s)
+RMS_NORM_MUL RMS_NORM(2048,1,1,1): 2 x 6.145 us = 12.291 us
+RMS_NORM_MUL RMS_NORM(2048,512,1,1): 95 x 20.575 us = 1954.7 us
+RMS_NORM_MUL_ROPE RMS_NORM(128,32,512,1): 48 x 402.264 us = 19308.7 us
+RMS_NORM_MUL_ROPE_VIEW_SET_ROWS RMS_NORM(128,4,512,1): 48 x 58.569 us = 2811.33 us
+SET_ROWS: 48 x 11.662 us = 559.821 us
+TOPK_MOE_EARLY_SOFTMAX_NORM SOFT_MAX: 48 x 10.165 us = 487.954 us
+Total time: 297366 us.
+----------------
+Vulkan Timings:
+ADD: 48 x 26.872 us = 1289.88 us
+FLASH_ATTN_EXT dst(128,32,512,1),  q(128,512,32,1),  k(128,512,4,1),  v(128,512,4,1),  m(512,512,1,1): 48 x 462.4 us = 22195.2 us (9288.41 GFLOPS/s)
+GET_ROWS: 2 x 5.025 us = 10.051 us
+GLU: 48 x 80.227 us = 3850.92 us
+MUL: 47 x 196.398 us = 9230.71 us
+MULTI_ADD ADD: 48 x 148.662 us = 7135.81 us
+MUL_MAT f32 m=128 n=512 k=2048: 47 x 33.347 us = 1567.32 us (8047.75 GFLOPS/s)
+MUL_MAT q4_K m=2048 n=512 k=4096: 35 x 245.753 us = 8601.39 us (34949.1 GFLOPS/s)
+MUL_MAT q4_K m=4096 n=512 k=2048: 43 x 229.007 us = 9847.32 us (37500.2 GFLOPS/s)
+MUL_MAT q4_K m=512 n=512 k=2048: 86 x 45.585 us = 3920.33 us (23548.9 GFLOPS/s)
+MUL_MAT q5_K m=2048 n=512 k=4096: 3 x 258.02 us = 774.061 us (33287.6 GFLOPS/s)
+MUL_MAT q5_K m=4096 n=512 k=2048: 5 x 241.656 us = 1208.28 us (35537.4 GFLOPS/s)
+MUL_MAT q5_K m=512 n=512 k=2048: 10 x 47.114 us = 471.141 us (22784.7 GFLOPS/s)
+MUL_MAT q6_K m=2048 n=512 k=4096: 10 x 273.197 us = 2731.97 us (31438.4 GFLOPS/s)
+MUL_MAT_ID q3_K m=2048 n=8 k=768 n_expert=128 batch=512: 36 x 1315.64 us = 47363.2 us (9787.24 GFLOPS/s)
+MUL_MAT_ID q3_K m=768 n=8 k=2048 n_expert=128 batch=512: 94 x 1264.28 us = 118842 us (10189 GFLOPS/s)
+MUL_MAT_ID q4_K m=2048 n=8 k=768 n_expert=128 batch=512: 11 x 979.639 us = 10776 us (13144.1 GFLOPS/s)
+MUL_MAT_ID_MUL MUL_MAT_ID_VEC q4_K m=2048 n=8 k=768 n_expert=128: 1 x 30.729 us = 30.729 us (818.427 GFLOPS/s)
+MUL_MAT_ID_VEC q3_K m=768 n=8 k=2048 n_expert=128: 2 x 33.984 us = 67.968 us (740.339 GFLOPS/s)
+MUL_MAT_VEC f32 m=128 n=1 k=2048: 1 x 7.5 us = 7.5 us (69.888 GFLOPS/s)
+MUL_MAT_VEC q6_K m=151936 n=1 k=2048: 1 x 713.333 us = 713.333 us (872.212 GFLOPS/s)
+RMS_NORM_MUL RMS_NORM(2048,1,1,1): 2 x 5.807 us = 11.614 us
+RMS_NORM_MUL RMS_NORM(2048,512,1,1): 95 x 20.411 us = 1939.12 us
+RMS_NORM_MUL_ROPE RMS_NORM(128,32,512,1): 48 x 401.969 us = 19294.6 us
+RMS_NORM_MUL_ROPE_VIEW_SET_ROWS RMS_NORM(128,4,512,1): 48 x 58.785 us = 2821.7 us
+SET_ROWS: 48 x 11.685 us = 560.917 us
+TOPK_MOE_EARLY_SOFTMAX_NORM SOFT_MAX: 48 x 10.213 us = 490.243 us
+Total time: 275753 us.
+| qwen3moe 30B.A3B Q3_K - Medium |  12.85 GiB |    30.53 B | Vulkan     |  99 |   1 |           pp512 |       1799.41 ± 0.00 |
+
+build: unknown (0)

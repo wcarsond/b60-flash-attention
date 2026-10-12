@@ -1,0 +1,20 @@
+clean-verify 2026-09-26T21:42:35  patch intel-xe-coopmat1-flash-attn.clean.patch
+clean patch: 3 files, 16 hunks, +100 -49 lines, getenv in added lines: 0
+  upstream b11200-1-g2145525; modified before: 3 files
+  applied; modified now: M ggml/src/ggml-vulkan/ggml-vulkan-types.h, M ggml/src/ggml-vulkan/ggml-vulkan.cpp, M ggml/src/ggml-vulkan/vulkan-shaders/flash_attn_cm1.comp
+  build: exit 0, 0 error lines, 22s
+  gate: 5297/5297 tests passed  (495s)
+  bench: pp512 1820 / 588 / 341 / 188   tg32 98 / 71 / 56 / 40   at d0 / 8K / 16K / 32K  (173s)
+  reference (rig patch, b11200 clean rerun): pp512 1839 / 580 / 340 / 186   tg32 96 / 71 / 56 / 40
+  upstream restored; modified after: 3 files
+clean-verify 2026-09-26T22:47:50  patch intel-xe-coopmat1-flash-attn.clean.patch
+clean patch: 3 files, 16 hunks, +100 -49 lines, getenv in added lines: 0
+clean patch sha256: 769DA11A17CE5F65FA34C8BCBAE637A5FC5E2EB90C913E2F1D62506EDB7C9742
+  upstream b11200-1-g2145525 at 2145525; modified before: 3 files (the working-tree rig patch)
+  rig patch stashed; checkout is now pristine b11200-1-g2145525: 0 modified files
+  applied; modified now: M ggml/src/ggml-vulkan/ggml-vulkan-types.h, M ggml/src/ggml-vulkan/ggml-vulkan.cpp, M ggml/src/ggml-vulkan/vulkan-shaders/flash_attn_cm1.comp
+  build: exit 0, 0 error lines, 21s
+  gate: 5297/5297 tests passed  (490s)
+  bench: pp512 1845 / 588 / 343 / 187   tg32 99 / 71 / 57 / 40   at d0 / 8K / 16K / 32K  (173s)
+  reference (rig patch, b11200 clean rerun): pp512 1839 / 580 / 340 / 186   tg32 96 / 71 / 56 / 40
+  upstream restored; modified after: 3 files

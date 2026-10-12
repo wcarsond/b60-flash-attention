@@ -1,0 +1,58 @@
+perf share 2026-09-26T20:16:30  patched b11191, pp512 at 16K depth
+  bin: <home>\llama.cpp-b60\build-vk\bin\Release   depth: 16384   prompt: 512
+  raw lines: 883  saved to perf-share.output.raw-d16384.txt
+  took 58s
+perf share 2026-09-26T20:17:28  patched b11191, pp512 at depth 0 (the no-attention-cost baseline)
+  bin: <home>\llama.cpp-b60\build-vk\bin\Release   depth: 0   prompt: 512
+  raw lines: 67  saved to perf-share.output.raw-d0.txt
+  took 28s
+  last graph: 512-token chunk with KV depth 16896; total op time 238.1 ms
+    dense matmuls (MUL_MAT)              30.1 ms   12.7%
+    norm + rope (RMS_NORM_*)             24.0 ms   10.1%
+    everything else                      21.4 ms    9.0%
+  top single ops:
+       108.9 ms  MUL_MAT_ID q3_K m=768 n=8 k=2048 n_expert=128 batch=512: 94 x 1158.27 us = 108877 us
+        43.9 ms  MUL_MAT_ID q3_K m=2048 n=8 k=768 n_expert=128 batch=512: 36 x 1218.42 us = 43863.3 us
+        19.3 ms  RMS_NORM_MUL_ROPE RMS_NORM(128,32,512,1): 48 x 402.294 us = 19310.1 us
+         9.9 ms  MUL_MAT q4_K m=4096 n=512 k=2048: 43 x 229.802 us = 9881.49 us
+         9.7 ms  MUL_MAT_ID q4_K m=2048 n=8 k=768 n_expert=128 batch=512: 11 x 880.032 us = 9680.36 us
+  last graph: 512-token chunk with KV depth 512; total op time 274.5 ms
+    dense matmuls (MUL_MAT)              29.8 ms   10.9%
+    norm + rope (RMS_NORM_*)             24.1 ms    8.8%
+    attention (FLASH_ATTN_EXT)           22.2 ms    8.1%
+    everything else                      21.3 ms    7.8%
+  top single ops:
+       118.8 ms  MUL_MAT_ID q3_K m=768 n=8 k=2048 n_expert=128 batch=512: 94 x 1264.28 us = 118842 us
+        47.4 ms  MUL_MAT_ID q3_K m=2048 n=8 k=768 n_expert=128 batch=512: 36 x 1315.64 us = 47363.2 us
+        22.2 ms  FLASH_ATTN_EXT dst(128,32,512,1),  q(128,512,32,1),  k(128,512,4,1),  v(128,512,4,1),  m(512,512,1,1): 48 x 462.4 us = 22195.2 us
+        19.3 ms  RMS_NORM_MUL_ROPE RMS_NORM(128,32,512,1): 48 x 401.969 us = 19294.6 us
+        10.8 ms  MUL_MAT_ID q4_K m=2048 n=8 k=768 n_expert=128 batch=512: 11 x 979.639 us = 10776 us
+  last graph: 512-token chunk with KV depth 16896; total op time 1,483.2 ms
+    attention (FLASH_ATTN_EXT)        1,245.1 ms   83.9%
+    expert matmuls (MUL_MAT_ID)         162.5 ms   11.0%
+    dense matmuls (MUL_MAT)              30.1 ms    2.0%
+    norm + rope (RMS_NORM_*)             24.0 ms    1.6%
+    everything else                      21.4 ms    1.4%
+  top single ops:
+     1,245.1 ms  FLASH_ATTN_EXT dst(128,32,512,1),  q(128,512,32,1),  k(128,16896,4,1),  v(128,16896,4,1),  m(16896,512,1,1): 48 x 25939.6 us = 1.2451e+06 us
+       108.9 ms  MUL_MAT_ID q3_K m=768 n=8 k=2048 n_expert=128 batch=512: 94 x 1158.27 us = 108877 us
+        43.9 ms  MUL_MAT_ID q3_K m=2048 n=8 k=768 n_expert=128 batch=512: 36 x 1218.42 us = 43863.3 us
+        19.3 ms  RMS_NORM_MUL_ROPE RMS_NORM(128,32,512,1): 48 x 402.294 us = 19310.1 us
+         9.9 ms  MUL_MAT q4_K m=4096 n=512 k=2048: 43 x 229.802 us = 9881.49 us
+  last graph: 512-token chunk with KV depth 512; total op time 274.5 ms
+    expert matmuls (MUL_MAT_ID)         177.1 ms   64.5%
+    dense matmuls (MUL_MAT)              29.8 ms   10.9%
+    norm + rope (RMS_NORM_*)             24.1 ms    8.8%
+    attention (FLASH_ATTN_EXT)           22.2 ms    8.1%
+    everything else                      21.3 ms    7.8%
+  top single ops:
+       118.8 ms  MUL_MAT_ID q3_K m=768 n=8 k=2048 n_expert=128 batch=512: 94 x 1264.28 us = 118842 us
+        47.4 ms  MUL_MAT_ID q3_K m=2048 n=8 k=768 n_expert=128 batch=512: 36 x 1315.64 us = 47363.2 us
+        22.2 ms  FLASH_ATTN_EXT dst(128,32,512,1),  q(128,512,32,1),  k(128,512,4,1),  v(128,512,4,1),  m(512,512,1,1): 48 x 462.4 us = 22195.2 us
+        19.3 ms  RMS_NORM_MUL_ROPE RMS_NORM(128,32,512,1): 48 x 401.969 us = 19294.6 us
+        10.8 ms  MUL_MAT_ID q4_K m=2048 n=8 k=768 n_expert=128 batch=512: 11 x 979.639 us = 10776 us
+  attention cost per KV row per layer vs depth (pp512, patched b11191, from the d16384 raw):
+    rows    512: 909 ns   2560: 1340   4608: 1407   8704: 1495   12800: 1527   16896: 1535 ns   (plateau; 1.7x the short-depth cost)
+  reading: L2 fall-off. 1535 ns/row ~ 330 GB/s of k+v re-reads (32 query blocks x 8 sharing heads per KV head) against 456 GB/s VRAM,
+  at ~2% of matrix peak. The bound at depth is re-reading the cache from VRAM, not the tile and not GQA per se.
+  next: slice the KV (split_k) and order the dispatch so in-flight workgroups share one slice, so the slice stays in L2.

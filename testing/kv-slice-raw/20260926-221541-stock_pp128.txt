@@ -1,0 +1,10 @@
+﻿ggml_vulkan: Found 1 Vulkan devices:
+ggml_vulkan: 0 = Intel(R) Arc(TM) Pro B60 Graphics (Intel Corporation) | uma: 0 | fp16: 1 | bf16: 0 | fp4: 0 | warp size: 32 | shared memory: 49152 | int dot: 1 | matrix cores: KHR_coopmat
+| model                          |       size |     params | backend    | ngl | n_batch | n_ubatch |  fa |            test |                  t/s |
+| ------------------------------ | ---------: | ---------: | ---------- | --: | ------: | -------: | --: | --------------: | -------------------: |
+| qwen3moe 30B.A3B Q3_K - Medium |  12.85 GiB |    30.53 B | Vulkan     |  99 |     128 |      128 |   1 |           pp128 |       840.98 ┬▒ 17.32 |
+| qwen3moe 30B.A3B Q3_K - Medium |  12.85 GiB |    30.53 B | Vulkan     |  99 |     128 |      128 |   1 |            tg32 |         98.79 ┬▒ 0.11 |
+| qwen3moe 30B.A3B Q3_K - Medium |  12.85 GiB |    30.53 B | Vulkan     |  99 |     128 |      128 |   1 |  pp128 @ d16384 |        236.34 ┬▒ 0.93 |
+| qwen3moe 30B.A3B Q3_K - Medium |  12.85 GiB |    30.53 B | Vulkan     |  99 |     128 |      128 |   1 |   tg32 @ d16384 |         58.21 ┬▒ 0.35 |
+
+build: unknown (0)

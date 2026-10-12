@@ -1,0 +1,6 @@
+﻿List the first twelve prime numbers, then explain in two sentences why there is no largest prime. Also, explain why the number 1 is not considered prime, and why the number 2 is the only even prime.
+
+The first twelve prime numbers are: 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37.
+
+There is no largest prime because if we assume there is a largest prime, we can always construct a
+

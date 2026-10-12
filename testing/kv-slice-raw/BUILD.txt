@@ -1,0 +1,12 @@
+Build identity for every raw llama-bench output in this folder (llama-bench prints "build: unknown (0)" because this
+tree was built from a source snapshot, not a git checkout):
+
+  source:   llama.cpp b11191 (snapshot at <home>\llama.cpp-b60\src\llama.cpp-b11191) plus the WORKING-TREE patch
+            (patches\current-full.patch: the 8-row coopmat1 flash-attention fix AND the env-gated tuning hooks and the
+            KV-slice experiment; all hooks inactive unless GGML_VK_FA_* variables are set)
+  binary:   build-vk\bin\Release\ggml-vulkan.dll, relinked 2026-09-26 20:27:08 after the KV-slice change
+  device:   Intel Arc Pro B60 24 GB, driver 32.0.101.9033, Windows 10 (22H2, build 19045)
+  model:    Qwen3-Coder-30B-A3B Q3_K_XL (12.85 GiB), f16 KV cache, -ngl 99 -fa 1
+  runs:     run 3b (22:15-22:22): -p 128 or 2048 with -ub p -b p, -n 32, -d 0,16384, -r 3; the file holds llama-bench's
+            printed mean +/- spread per cell, not the three individual samples.
+  env:      stock_* files: no GGML_VK_FA_* set.  slice_N_* files: GGML_VK_FA_KV_SLICE=N (x order, MIN default 4096).

@@ -1,0 +1,400 @@
+--- a/ggml/src/ggml-vulkan/ggml-vulkan.cpp
++++ b/ggml/src/ggml-vulkan/ggml-vulkan.cpp
+@@ -1197,10 +1197,27 @@
+     vk_fa_tuning_params result{};
+     result.path = FA_SCALAR;
+ 
++    // B60 TUNING HOOKS (2026-09-26): on the Arc Pro B60 the coopmat1 FA path is rejected (shape/shmem) and THIS
++    // scalar path carries prompt processing. Its Intel choices below were made for Alchemist (Xe1): a forced
++    // 32-wide subgroup where Xe2 is natively 16, subgroups disabled, block rows halved. Env overrides, unset = stock:
++    //   GGML_VK_FA_SC_SG        subgroup size (Intel stock 32; Xe2 native 16)
++    //   GGML_VK_FA_SC_NOSUBGRP  1 = disable subgroup ops (Intel stock), 0 = use them
++    //   GGML_VK_FA_SC_BR        block rows (Intel stock 8 for hsk 128 at n_rows >= 8; 16 elsewhere; try 16, 32)
++    //   GGML_VK_FA_SC_BC        block cols (stock 32 for hsk 128; try 64)
++    //   GGML_VK_FA_SC_ROWSPLIT  row split (stock 4 for hsk 128; try 1, 2)
++    //   GGML_VK_FA_SC_WGMUL     workgroup size = subgroup_size * this (stock 4, or 2 for small shapes)
++    static const char * e_sg   = getenv("GGML_VK_FA_SC_SG");
++    static const char * e_nosg = getenv("GGML_VK_FA_SC_NOSUBGRP");
++    static const char * e_br   = getenv("GGML_VK_FA_SC_BR");
++    static const char * e_bc   = getenv("GGML_VK_FA_SC_BC");
++    static const char * e_rs   = getenv("GGML_VK_FA_SC_ROWSPLIT");
++    static const char * e_wg   = getenv("GGML_VK_FA_SC_WGMUL");
++    static bool sc_announced = false;
++
+     if (device->vendor_id == VK_VENDOR_ID_INTEL) {
+         // Disable subgroup use due to performance issues when enforcing subgroup sizes
+-        result.subgroup_size = 32;
+-        result.disable_subgroups = true;
++        result.subgroup_size = e_sg ? (uint32_t)atoi(e_sg) : 32;
++        result.disable_subgroups = e_nosg ? (atoi(e_nosg) != 0) : true;
+     } else if (device->vendor_id == VK_VENDOR_ID_AMD && device->architecture != AMD_GCN) {
+         result.subgroup_size = n_rows < 4 ? 32 : device->subgroup_size;
+     } else {
+@@ -1213,11 +1230,17 @@
+         row_split_max_hsk = n_rows <= 8 ? 64 : 128;
+     }
+     result.row_split = (n_rows < 4 || hsk <= row_split_max_hsk) ? 1 : 4;
++    if (e_rs && n_rows >= 4) {
++        result.row_split = (uint32_t)atoi(e_rs);
++    }
+ 
+     if (result.subgroup_size > 32 && (n_rows < 4 || hsk < (result.row_split == 1 ? 128 : 64))) {
+         result.workgroup_size = result.subgroup_size * 2;
+     } else {
+         result.workgroup_size = result.subgroup_size * 4;
++    }
++    if (e_wg) {
++        result.workgroup_size = result.subgroup_size * (uint32_t)atoi(e_wg);
+     }
+ 
+     const uint32_t D = hsk | hsv;
+@@ -1236,6 +1259,17 @@
+         }
+ 
+         result.block_cols = (D & 8) ? 64 : 32;
++
++        // overrides only for the batched (prompt) case, which is the one that collapses at depth
++        if (n_rows >= 8) {
++            if (e_br) result.block_rows = (uint32_t)atoi(e_br);
++            if (e_bc) result.block_cols = (uint32_t)atoi(e_bc);
++        }
++        if ((e_sg || e_nosg || e_br || e_bc || e_rs || e_wg) && !sc_announced && n_rows >= 8) {
++            sc_announced = true;
++            fprintf(stderr, "ggml_vulkan: FA scalar tuning override (n_rows=%u): subgroup=%u nosubgroups=%d block_rows=%u block_cols=%u row_split=%u workgroup=%u\n",
++                    n_rows, result.subgroup_size, (int)result.disable_subgroups, result.block_rows, result.block_cols, result.row_split, result.workgroup_size);
++        }
+     }
+ 
+     const uint32_t D_lsb = D ^ (D & (D-1));  // extract lowest set bit
+@@ -1279,21 +1313,59 @@
+ 
+     const uint32_t D = hsk | hsv;
+ 
+-    const uint32_t coopmat_block_rows = 16;
+-    const uint32_t coopmat_block_cols = 16;
+-
+-    const uint32_t num_subgroups = 4;
++    // B60 TUNING HOOKS (2026-09-26). The coopmat1 tile shape below was never measured on Intel:
++    // 16 query rows per block means every block walks the whole KV cache, and at 16K depth prompt processing on
++    // the Arc Pro B60 falls from ~1700 to ~170 tok/s. These env overrides let a sweep try other shapes without
++    // touching the shaders. Unset = stock behaviour.
++    //   GGML_VK_FA_CM1_BR        block rows (query rows per block): 16 (stock), 32, 64
++    //   GGML_VK_FA_CM1_SUBGROUPS subgroups per workgroup (row_split, also x16 = block cols): 4 (stock), 2, 8
++    //   GGML_VK_FA_CM1_STAGING   stage K/V through shared memory: 0 (stock on Intel), 1 (stock on Nvidia)
++    static const char * env_br  = getenv("GGML_VK_FA_CM1_BR");
++    static const char * env_sg  = getenv("GGML_VK_FA_CM1_SUBGROUPS");
++    static const char * env_stg = getenv("GGML_VK_FA_CM1_STAGING");
++    static bool announced = false;
++
++    // The matrix tile: 16x16x16 where the device has it, else Intel Xe's 8x16x16. M is the KV rows each subgroup
++    // multiplies per step (and the query rows per P*V tile); N and K stay 16.
++    const bool has16 = f32acc ? device->coopmat_support_16x16x16_f32acc : device->coopmat_support_16x16x16_f16acc;
++    const bool has8  = f32acc ? device->coopmat_support_8x16x16_f32acc  : device->coopmat_support_8x16x16_f16acc;
++    result.mat_m = has16 ? 16 : (has8 ? 8 : 0);
++
++    const uint32_t coopmat_block_rows = env_br ? (uint32_t)atoi(env_br) : 16;
++    const uint32_t coopmat_block_cols = result.mat_m ? result.mat_m : 16;
++
++    // Subgroups per workgroup = row_split. The softmax in flash_attn_cm1.comp walks its rows four at a time, so
++    // block_rows / row_split must stay >= 4: with 16 query rows that caps row_split at 4. (8 subgroups gave two rows
++    // per thread and garbage output on the B60, 2026-09-26; it was the harness's 'wrong' for two hours.)
++    // Measured on the B60 (2026-09-26, A3B, pp512 at depth 0/8K/16K/32K): 2 subgroups 1847/586/341/187,
++    // 4 subgroups 1863/560/290/153, stock scalar 1707/319/173/89; decode identical. So 2 for the 8-row tile.
++    uint32_t num_subgroups = env_sg ? (uint32_t)atoi(env_sg) : (result.mat_m == 8 ? 2 : 4);
++    if (num_subgroups > coopmat_block_rows / 4) {
++        num_subgroups = coopmat_block_rows / 4;
++    }
+ 
+     result.block_rows = coopmat_block_rows;
+     result.block_cols = coopmat_block_cols * num_subgroups;
+     result.row_split = num_subgroups;
+-    result.subgroup_size = device->subgroup_size;
++    // Intel executes cooperative-matrix ops at its minimum subgroup width (16 on Xe). The matmul path pins its
++    // coopmat1 pipelines to that width; at the device default of 32 the FA coopmat ops return garbage
++    // (test-backend-ops: every FLASH_ATTN_EXT case at ERR ~0.94 on the B60, 2026-09-26).
++    result.subgroup_size = (device->vendor_id == VK_VENDOR_ID_INTEL && device->subgroup_size_control) ? device->subgroup_min_size : device->subgroup_size;
+     result.workgroup_size = num_subgroups * result.subgroup_size;
+ 
+     const uint32_t D_lsb = D ^ (D & (D-1));  // extract lowest set bit
+     result.d_split = std::min(std::min(result.subgroup_size, 8u), D_lsb / 4);
+ 
+-    result.shmem_staging = (device->vendor_id == VK_VENDOR_ID_NVIDIA && hsk < 256 && hsv < 256) ? 1 : 0;
++    // Staging K/V through shared memory: on by default for Nvidia as upstream; on the B60 both staged and direct
++    // loads pass test-backend-ops (5297/5297 each, 2026-09-26), so Intel takes the direct path unless a race says
++    // otherwise (GGML_VK_FA_CM1_STAGING=1 to compare).
++    result.shmem_staging = env_stg ? (uint32_t)atoi(env_stg) : ((device->vendor_id == VK_VENDOR_ID_NVIDIA && hsk < 256 && hsv < 256) ? 1 : 0);
++
++    if ((env_br || env_sg || env_stg) && !announced) {
++        announced = true;
++        fprintf(stderr, "ggml_vulkan: FA coopmat1 tuning override: block_rows=%u subgroups=%u block_cols=%u staging=%u\n",
++                result.block_rows, num_subgroups, result.block_cols, result.shmem_staging);
++    }
+ 
+     return result;
+ }
+@@ -1342,13 +1414,24 @@
+         path = FA_SCALAR;
+     }
+ 
++    // B60 tuning: GGML_VK_FA_CM1_DISABLE=1 forces the scalar path, for racing the 8-row coopmat1 kernel against it
++    static const bool cm1_disabled = getenv("GGML_VK_FA_CM1_DISABLE") != nullptr;
++    if (path == FA_COOPMAT1 && cm1_disabled) {
++        path = FA_SCALAR;
++    }
++
+     if (path == FA_COOPMAT1) {
+-        bool shape_ok = (f32acc && device->coopmat_support_16x16x16_f32acc) ||
+-                        (!f32acc && device->coopmat_support_16x16x16_f16acc);
++        bool shape_ok = (f32acc && (device->coopmat_support_16x16x16_f32acc || device->coopmat_support_8x16x16_f32acc)) ||
++                        (!f32acc && (device->coopmat_support_16x16x16_f16acc || device->coopmat_support_8x16x16_f16acc));
+         const vk_fa_tuning_params params = get_fa_tuning_params_coopmat1(device, hsk, hsv, n_rows, n_kv, k_type, v_type, f32acc);
+         bool shmem_ok = ggml_vk_flash_attn_coopmat_shmem_support(device, params, hsk, hsv, f32acc, k_type, v_type);
+ 
+         if (!shape_ok || !shmem_ok) {
++            static bool warned = false;
++            if (!warned && (getenv("GGML_VK_FA_CM1_BR") || getenv("GGML_VK_FA_CM1_SUBGROUPS") || getenv("GGML_VK_FA_CM1_STAGING"))) {
++                warned = true;
++                fprintf(stderr, "ggml_vulkan: FA coopmat1 tuning override REJECTED (shape_ok=%d shmem_ok=%d): falling back to scalar\n", (int)shape_ok, (int)shmem_ok);
++            }
+             path = FA_SCALAR;
+         }
+     }
+@@ -1383,7 +1466,7 @@
+ 
+     const uint32_t subgroup_size = params.disable_subgroups ? 0 : params.subgroup_size;
+ 
+-    return vk_fa_pipeline_state{hsk, hsv, params.block_rows, params.block_cols, params.d_split, params.row_split, params.shmem_staging, params.path, params.workgroup_size, subgroup_size, aligned, f32acc, flags, params.limit_occupancy_shmem, k_type, v_type};
++    return vk_fa_pipeline_state{hsk, hsv, params.block_rows, params.block_cols, params.d_split, params.row_split, params.shmem_staging, params.path, params.workgroup_size, subgroup_size, aligned, f32acc, flags, params.limit_occupancy_shmem, k_type, v_type, params.mat_m};
+ }
+ 
+ static uint32_t fa_block_bytes(ggml_type t) {
+@@ -1411,6 +1494,7 @@
+         /*13 FaTypeV         */ static_cast<uint32_t>(state.v_type),
+         /*14 FaBlockBytesK   */ fa_block_bytes(state.k_type),
+         /*15 FaBlockBytesV   */ fa_block_bytes(state.v_type),
++        /*16 MatM (cm1 only) */ state.mat_m ? state.mat_m : 16u,
+     };
+ }
+ 
+@@ -4662,8 +4746,15 @@
+ 
+             VK_LOG_DEBUG("ggml_vulkan: Cooperative Matrix Shapes: " << cm_props.size());
+ 
++            static const bool print_coopmat = getenv("GGML_VK_PRINT_COOPMAT") != nullptr;   // B60 tuning: list the shapes the driver offers
+             for (auto& prop : cm_props) {
+                 VK_LOG_DEBUG("ggml_vulkan: M: " << prop.MSize << " N: " << prop.NSize << " K: " << prop.KSize << " A: " << vk::to_string((vk::ComponentTypeKHR)prop.AType) << " B: " << vk::to_string((vk::ComponentTypeKHR)prop.BType) << " C: " << vk::to_string((vk::ComponentTypeKHR)prop.CType) << " Result: " << vk::to_string((vk::ComponentTypeKHR)prop.ResultType) << " saturatingAccumulation: " << prop.saturatingAccumulation << " scope: " << vk::to_string((vk::ScopeKHR)prop.scope));
++                if (print_coopmat) {
++                    fprintf(stderr, "ggml_vulkan: coopmat shape %ux%ux%u A=%s B=%s C=%s R=%s sat=%u scope=%s\n", prop.MSize, prop.NSize, prop.KSize,
++                            vk::to_string((vk::ComponentTypeKHR)prop.AType).c_str(), vk::to_string((vk::ComponentTypeKHR)prop.BType).c_str(),
++                            vk::to_string((vk::ComponentTypeKHR)prop.CType).c_str(), vk::to_string((vk::ComponentTypeKHR)prop.ResultType).c_str(),
++                            prop.saturatingAccumulation, vk::to_string((vk::ScopeKHR)prop.scope).c_str());
++                }
+ 
+                 if ((vk::ComponentTypeKHR)prop.AType == vk::ComponentTypeKHR::eFloat16 &&
+                     (vk::ComponentTypeKHR)prop.BType == vk::ComponentTypeKHR::eFloat16 &&
+@@ -4684,6 +4775,9 @@
+                         if (prop.MSize == 16 && prop.NSize == 16 && prop.KSize == 16) {
+                             device->coopmat_support_16x16x16_f32acc = true;
+                         }
++                        if (prop.MSize == 8 && prop.NSize == 16 && prop.KSize == 16) {
++                            device->coopmat_support_8x16x16_f32acc = true;
++                        }
+                     } else if ((vk::ComponentTypeKHR)prop.CType == vk::ComponentTypeKHR::eFloat16 &&
+                                (vk::ComponentTypeKHR)prop.ResultType == vk::ComponentTypeKHR::eFloat16) {
+                         // coopmat sizes not set yet
+@@ -4698,6 +4792,9 @@
+                         }
+                         if (prop.MSize == 16 && prop.NSize == 16 && prop.KSize == 16) {
+                             device->coopmat_support_16x16x16_f16acc = true;
++                        }
++                        if (prop.MSize == 8 && prop.NSize == 16 && prop.KSize == 16) {
++                            device->coopmat_support_8x16x16_f16acc = true;
+                         }
+                     }
+                 } else if ((vk::ComponentTypeKHR)prop.AType      == vk::ComponentTypeKHR::eSint8 &&
+@@ -7945,7 +8042,7 @@
+     const uint32_t Br = params.block_rows;
+     const uint32_t Bc = params.block_cols;
+ 
+-    const uint32_t MatBr = 16, MatBc = 16;
++    const uint32_t MatBr = 16, MatBc = params.mat_m ? params.mat_m : 16;   // MatBc = M of the tile (8 on Intel Xe)
+ 
+     const uint32_t row_split = Bc / MatBc;
+ 
+@@ -7969,13 +8066,13 @@
+     const uint32_t sfsh = Bc * sfshstride * acctype;
+ 
+     const uint32_t kvshstride = (params.shmem_staging ? std::max(hsk_pad, hsv_pad) : MatBr) / 4 + 2;
+-    const uint32_t vsh_stride = MatBc / 4 * row_split;
++    const uint32_t vsh_stride = MatBr / 4 * row_split;          // V staging: 16 hsv columns per subgroup (N), not M
+     const uint32_t ksh = ((kvshstride >= vsh_stride) ? (Bc * kvshstride) : (Bc * vsh_stride)) * f16vec4;
+ 
+     // BF16 PVMat accumulator is f32 (no bf16 accumulator support), so pvsh is vec4 (16 bytes)
+     const uint32_t pvsh_elem_size = (k_type == GGML_TYPE_BF16) ? 16u : f16vec4;
+     const uint32_t osh_stride = params.row_split * MatBr / 4;
+-    const uint32_t pvsh = MatBc * osh_stride * pvsh_elem_size;
++    const uint32_t pvsh = Br * osh_stride * pvsh_elem_size;      // all Br query rows: the P*V tile loop covers Br in M-row steps
+ 
+     const uint32_t slope = Br * acctype;
+ 
+--- a/ggml/src/ggml-vulkan/ggml-vulkan-types.h
++++ b/ggml/src/ggml-vulkan/ggml-vulkan-types.h
+@@ -441,10 +441,11 @@
+     uint32_t limit_occupancy_shmem;
+     ggml_type k_type;
+     ggml_type v_type;
++    uint32_t mat_m;   // coopmat1: M of the matrix tile (16, or 8 on Intel Xe); 0 = not applicable
+ 
+     bool operator<(const vk_fa_pipeline_state &b) const {
+-        return std::tie(HSK, HSV, Br, Bc, D_split, row_split, shmem_staging, path, workgroup_size, subgroup_size, aligned, f32acc, flags, limit_occupancy_shmem, k_type, v_type) <
+-               std::tie(b.HSK, b.HSV, b.Br, b.Bc, b.D_split, b.row_split, b.shmem_staging, b.path, b.workgroup_size, b.subgroup_size, b.aligned, b.f32acc, b.flags, b.limit_occupancy_shmem, b.k_type, b.v_type);
++        return std::tie(HSK, HSV, Br, Bc, D_split, row_split, shmem_staging, path, workgroup_size, subgroup_size, aligned, f32acc, flags, limit_occupancy_shmem, k_type, v_type, mat_m) <
++               std::tie(b.HSK, b.HSV, b.Br, b.Bc, b.D_split, b.row_split, b.shmem_staging, b.path, b.workgroup_size, b.subgroup_size, b.aligned, b.f32acc, b.flags, b.limit_occupancy_shmem, b.k_type, b.v_type, b.mat_m);
+     }
+ };
+ 
+@@ -742,6 +743,9 @@
+     bool coopmat_bf16_support {};
+     bool coopmat_support_16x16x16_f16acc {};
+     bool coopmat_support_16x16x16_f32acc {};
++    // Intel Xe (Arc A/B series) offers only 8x16x16 for f16: the coopmat1 FA kernel runs with an 8-row matrix tile there
++    bool coopmat_support_8x16x16_f16acc {};
++    bool coopmat_support_8x16x16_f32acc {};
+     bool coopmat1_fa_support {};
+     uint32_t coopmat_m;
+     uint32_t coopmat_n;
+@@ -1347,6 +1351,7 @@
+     bool shmem_staging;
+     bool disable_subgroups;
+     uint32_t limit_occupancy_shmem;
++    uint32_t mat_m = 0;   // coopmat1 matrix tile M (16 normally, 8 on Intel Xe)
+ 
+     void print() const {
+         std::cerr << "path=" << path << " workgroup_size=" << workgroup_size << " subgroup_size=" << subgroup_size <<
+--- a/ggml/src/ggml-vulkan/vulkan-shaders/flash_attn_cm1.comp
++++ b/ggml/src/ggml-vulkan/vulkan-shaders/flash_attn_cm1.comp
+@@ -22,9 +22,14 @@
+ #include "flash_attn_dequant.glsl"
+ #endif
+ 
+-// These need to be supported N,M values for a MatBc x MatBr x 16 coopmatmuladd
++// The coopmat tile is M x N x K = MatM x 16 x 16. Both products in this shader are (MatBc x 16) * (16 x MatBr):
++//   K * Q^T : A = K rows (MatBc = MatM KV rows per subgroup), B = Q^T (16 head dims x MatBr = 16 queries)
++//   P * V   : A = P (MatM query rows x 16 KV), B = V (16 KV x MatBr = 16 head dims)
++// MatM is 16 where the device offers 16x16x16 and 8 on Intel Xe, whose DPAS units only offer 8x16x16 for f16
++// (Arc Pro B60: measured 2026-09-26). With MatM = 8 the P*V product walks the Br query rows in two 8-row tiles.
++layout (constant_id = 16) const uint32_t MatM = 16;
+ const uint32_t MatBr = 16;
+-const uint32_t MatBc = 16;
++const uint32_t MatBc = MatM;
+ 
+ const uint32_t rows_per_thread = Br / row_split;
+ const uint32_t cols_per_iter = gl_WorkGroupSize.x / row_split;
+@@ -53,12 +58,12 @@
+ 
+ const uint32_t D_pad = HSK_pad > HSV_pad ? HSK_pad : HSV_pad;
+ const uint32_t kvsh_stride = (SHMEM_STAGING != 0 ? D_pad : MatBr) / 4 + 2;
+-const uint v_cols = MatBc / 4 * row_split; // total cols, 4 vec4s per MatBc * number of subgroups
++const uint v_cols = MatBr / 4 * row_split; // total cols, 4 vec4s per 16 head dims (N) * number of subgroups
+ const uint vsh_stride = v_cols;
+ shared FLOAT_TYPEV4 kvsh[(kvsh_stride >= vsh_stride) ? (Bc * kvsh_stride) : (Bc * vsh_stride)];
+ 
+ const uint32_t osh_stride = row_split * MatBr / 4;
+-shared O_TYPEV4 pvsh[MatBc * osh_stride];
++shared O_TYPEV4 pvsh[Br * osh_stride];      // every query row: the P*V loop covers Br in MatM-row tiles
+ 
+ shared ACC_TYPE slope[Br];
+ 
+@@ -436,13 +441,11 @@
+         }
+         barrier();
+ 
+-        const uint num_hsv_tiles = (HSV + MatBc * row_split - 1) / (MatBc * row_split); // round up
+-
+-        // Each subgroup handles HSV/4 columns
++        const uint num_hsv_tiles = (HSV + MatBr * row_split - 1) / (MatBr * row_split); // round up: 16 head dims per subgroup per tile
++
++        // Each subgroup handles 16 head-dim columns per tile
+         [[unroll]] for (uint32_t hsv_tile = 0; hsv_tile < num_hsv_tiles; ++hsv_tile) {
+             const uint hsv_offset = (hsv_tile * row_split + gl_SubgroupID) * 16;
+-
+-            coopmat<O_TYPE, gl_ScopeSubgroup, MatBc, MatBr, gl_MatrixUseAccumulator> PVMat = coopmat<O_TYPE, gl_ScopeSubgroup, MatBc, MatBr, gl_MatrixUseAccumulator>(0);
+ 
+             // Preload V tiles for [Bc, 16 * num subgroups]
+             const uint v_rows = Bc;
+@@ -465,7 +468,7 @@
+ 
+                     uint32_t v_row;
+                     bool kv_active = fa_kv_index(j * Bc + row, v_row);
+-                    const uint v_col = hsv_tile * MatBc * row_split + col * 4;
++                    const uint v_col = hsv_tile * MatBr * row_split + col * 4;
+ 
+                     const uint coord = v_row * v_stride * BLOCK_SIZE_V + v_col;
+                     const uint ib = coord / BLOCK_SIZE_V;
+@@ -491,34 +494,42 @@
+             const uint o_offset = gl_SubgroupID * MatBr / 4;
+ 
+             if (hsv_offset < HSV_pad) {
+-                [[unroll]] for (uint32_t bc_chunk = 0; bc_chunk < Bc / MatBc; ++bc_chunk) {
+-                    coopMatLoad(KMat, Psh, bc_chunk * MatBc * psh_stride, psh_stride, gl_CooperativeMatrixLayoutColumnMajor);
+-
+-                    if (SHMEM_STAGING == 0) {
+-                    if (!USE_DECODE_V && !KV_bounds_check && !USE_SPARSE) {
+-                        // F16/BF16 values can be loaded directly from global memory
+-                        const uint v_tile_row = j * Bc + bc_chunk * MatBc;
+-                        const uint v_tile_offset = v_offset / 4 + v_tile_row * v_stride / 4 + hsv_offset / 4;
+-                        coopMatLoad(QMat, data_vv4, v_tile_offset, v_stride / 4, gl_CooperativeMatrixLayoutRowMajor);
+-                    } else {
+-                        const uint v_tile_offset = bc_chunk * MatBr * v_cols + gl_SubgroupID * (MatBc / 4);
+-                        coopMatLoad(QMat, kvsh, v_tile_offset, vsh_stride, gl_CooperativeMatrixLayoutRowMajor);
+-                    }
+-                    } else {
+-                        const uint v_tile_offset = bc_chunk * MatBc * kvsh_stride + (hsv_tile * row_split + gl_SubgroupID) * (MatBc / 4);
+-                        coopMatLoad(QMat, kvsh, v_tile_offset, kvsh_stride, gl_CooperativeMatrixLayoutRowMajor);
+-                    }
+-
+-                    PVMat = coopMatMulAdd(KMat, QMat, PVMat);
+-                }
+-
+-                // Store PVMat to pvsh and load into Of
+-                coopMatStore(PVMat, pvsh, o_offset, osh_stride, gl_CooperativeMatrixLayoutRowMajor);
++                // P * V for this subgroup's 16 head dims, MatM query rows at a time (one tile when MatM == Br == 16,
++                // two when MatM == 8). The reduction over KV runs in chunks of 16 (the tile's K), independent of MatM.
++                [[unroll]] for (uint32_t qt = 0; qt < Br / MatBc; ++qt) {
++                    // spelled with MatBc (== MatM) so glslang sees the same spec-constant expression as KMat's rows
++                    coopmat<O_TYPE, gl_ScopeSubgroup, MatBc, MatBr, gl_MatrixUseAccumulator> PVMat = coopmat<O_TYPE, gl_ScopeSubgroup, MatBc, MatBr, gl_MatrixUseAccumulator>(0);
++
++                    [[unroll]] for (uint32_t kc = 0; kc < Bc / 16; ++kc) {
++                        // A = P[qt*MatM .. +MatM query rows][kc*16 .. +16 KV]: Psh is [Bc][Br/4] vec4, column-major here
++                        coopMatLoad(KMat, Psh, kc * 16 * psh_stride + qt * (MatBc / 4), psh_stride, gl_CooperativeMatrixLayoutColumnMajor);
++
++                        if (SHMEM_STAGING == 0) {
++                        if (!USE_DECODE_V && !KV_bounds_check && !USE_SPARSE) {
++                            // F16/BF16 values can be loaded directly from global memory
++                            const uint v_tile_row = j * Bc + kc * 16;
++                            const uint v_tile_offset = v_offset / 4 + v_tile_row * v_stride / 4 + hsv_offset / 4;
++                            coopMatLoad(QMat, data_vv4, v_tile_offset, v_stride / 4, gl_CooperativeMatrixLayoutRowMajor);
++                        } else {
++                            const uint v_tile_offset = kc * 16 * v_cols + gl_SubgroupID * (MatBr / 4);
++                            coopMatLoad(QMat, kvsh, v_tile_offset, vsh_stride, gl_CooperativeMatrixLayoutRowMajor);
++                        }
++                        } else {
++                            const uint v_tile_offset = kc * 16 * kvsh_stride + (hsv_tile * row_split + gl_SubgroupID) * (MatBr / 4);
++                            coopMatLoad(QMat, kvsh, v_tile_offset, kvsh_stride, gl_CooperativeMatrixLayoutRowMajor);
++                        }
++
++                        PVMat = coopMatMulAdd(KMat, QMat, PVMat);
++                    }
++
++                    // Store this query-row tile of PVMat to pvsh; Of picks it up below
++                    coopMatStore(PVMat, pvsh, o_offset + qt * MatBc * osh_stride, osh_stride, gl_CooperativeMatrixLayoutRowMajor);
++                }
+             }
+ 
+             barrier();
+ 
+-            const uint hsv_per_tile = row_split * MatBc;
++            const uint hsv_per_tile = row_split * MatBr;
+             const uint hsv_base = hsv_tile * hsv_per_tile;
+             const uint d_values_per_tile = hsv_per_tile / 4;
+ 
