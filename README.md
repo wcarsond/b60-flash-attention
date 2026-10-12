@@ -11,6 +11,25 @@ fixed to run on Intel's 8-row matrix tile. Prompt processing at long context rou
 Qwen3-Coder-30B-A3B Q3_K_XL, driver 32.0.101.9033, Windows 10 (22H2, build 19045). Generation (tg32): 98 / 70 / 57 / 40 both ways.
 Correctness: test-backend-ops FLASH_ATTN_EXT 5297 of 5297 against the CPU reference; perplexity within noise.
 
+## Two cards, and how it compares
+
+`patches/two-card-exchange.patch` adds a two-device all-reduce to the Vulkan backend, so `--split-mode tensor` makes
+two Arc cards faster than one instead of slower. `patches/two-card-exchange-with-flash-attn.patch` is that plus the
+flash-attention fix, in one diff against b11200 (5297/5297 on the CPU-reference gate). Design and the driver facts it
+rests on: `docs/two-card-exchange.md`.
+
+Two Arc Pro B60s, decode tok/s short / at 32K context, and seconds to the first token for a 32K-token prompt:
+
+| model | stock Vulkan, 2 cards | exchange + fix, 2 cards | vLLM (Windows port), 2 cards |
+|---|---|---|---|
+| Qwen2.5-Coder-7B (Q8_0; vLLM bf16) | 43.4 / 33.1, 60.5 s | 66.0 / 48.6, 30.2 s | 46.4 / 40.1, 8.8 s |
+| Qwen2.5-14B (Q4_K_M; vLLM bf16) | 37.9 / 22.4, 154.0 s | 50.2 / 31.5, 67.2 s | 25.2 / 20.9, 17.7 s |
+| Granite 4.2 30B (Q4_K_M; vLLM GPTQ int4) | 19.8 / 13.6, 176.1 s | 29.3 / 20.3, 80.2 s | 31.9 / 25.3, 27.8 s |
+
+Every backend (stock and patched Vulkan, SYCL, the exchange, vLLM), one card and two, prefill and decode from short
+to 32K: `docs/backend-race.md`. Weights only match across engines on Granite; on the other two vLLM reads 16-bit
+weights, which handicaps its decode there.
+
 ## Install
 
 The binary release is being rebuilt from the clean patch on b11200. Until it is up, build it yourself (below);
@@ -71,16 +90,16 @@ patch is the first version, kept for the record.
 ## Repository
 
 - `install/` the install and bench scripts above
-- `patches/` the upstream patch and the full working-tree diff
+- `patches/` the upstream patch, the full working-tree diff, and the two-card exchange with and without the fix
 - `src/` the four touched files, current and pristine
-- `testing/` every measurement, as produced, with a README naming each file
-- `docs/` the PR draft and the sources it cites
+- `testing/` every measurement, as produced, with a README naming each file; `testing/backend-race/` the race
+- `docs/` the PR draft and the sources it cites, the two-card exchange, the backend race
 
 ## Status
 
 The clean patch is being prepared as a pull request to llama.cpp; `testing/clean-verify.output.log` records its build,
 CPU-reference gate (5297/5297) and depth curve on an untouched upstream b11200 checkout. The tuning hooks and the
-KV-slice experiment are not part of it.
+KV-slice experiment are not part of it. The two-card exchange is not submitted upstream.
 
 ## License
 

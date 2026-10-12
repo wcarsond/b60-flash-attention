@@ -1,0 +1,278 @@
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-stock", "cards": 1, "quant": "Q8_0", "kind": "prefill", "ctx": 512, "tps": 2544.5, "note": "", "at": "2026-10-12 01:43:37"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-stock", "cards": 1, "quant": "Q8_0", "kind": "prefill", "ctx": 4096, "tps": 1567.9, "note": "", "at": "2026-10-12 01:43:37"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-stock", "cards": 1, "quant": "Q8_0", "kind": "prefill", "ctx": 8192, "tps": 1036.5, "note": "", "at": "2026-10-12 01:43:37"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-stock", "cards": 1, "quant": "Q8_0", "kind": "prefill", "ctx": 16384, "tps": 621.1, "note": "", "at": "2026-10-12 01:43:37"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-stock", "cards": 1, "quant": "Q8_0", "kind": "prefill", "ctx": 32000, "tps": 352.4, "note": "", "at": "2026-10-12 01:43:37"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-stock", "cards": 1, "quant": "Q8_0", "kind": "decode", "ctx": 0, "tps": 44.4, "note": "", "at": "2026-10-12 01:46:26"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-stock", "cards": 1, "quant": "Q8_0", "kind": "decode", "ctx": 4096, "tps": 42.5, "note": "", "at": "2026-10-12 01:46:26"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-stock", "cards": 1, "quant": "Q8_0", "kind": "decode", "ctx": 8192, "tps": 41.1, "note": "", "at": "2026-10-12 01:46:26"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-stock", "cards": 1, "quant": "Q8_0", "kind": "decode", "ctx": 16384, "tps": 38.5, "note": "", "at": "2026-10-12 01:46:26"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-stock", "cards": 1, "quant": "Q8_0", "kind": "decode", "ctx": 32000, "tps": 34, "note": "", "at": "2026-10-12 01:46:26"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-patched", "cards": 1, "quant": "Q8_0", "kind": "prefill", "ctx": 512, "tps": 2704.4, "note": "", "at": "2026-10-12 01:55:32"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-patched", "cards": 1, "quant": "Q8_0", "kind": "prefill", "ctx": 4096, "tps": 2067.9, "note": "", "at": "2026-10-12 01:55:32"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-patched", "cards": 1, "quant": "Q8_0", "kind": "prefill", "ctx": 8192, "tps": 1597.9, "note": "", "at": "2026-10-12 01:55:32"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-patched", "cards": 1, "quant": "Q8_0", "kind": "prefill", "ctx": 16384, "tps": 1087.5, "note": "", "at": "2026-10-12 01:55:32"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-patched", "cards": 1, "quant": "Q8_0", "kind": "prefill", "ctx": 32000, "tps": 676.2, "note": "", "at": "2026-10-12 01:55:32"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-patched", "cards": 1, "quant": "Q8_0", "kind": "decode", "ctx": 0, "tps": 44.5, "note": "", "at": "2026-10-12 01:57:25"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-patched", "cards": 1, "quant": "Q8_0", "kind": "decode", "ctx": 4096, "tps": 42.6, "note": "", "at": "2026-10-12 01:57:25"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-patched", "cards": 1, "quant": "Q8_0", "kind": "decode", "ctx": 8192, "tps": 41, "note": "", "at": "2026-10-12 01:57:25"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-patched", "cards": 1, "quant": "Q8_0", "kind": "decode", "ctx": 16384, "tps": 38.4, "note": "", "at": "2026-10-12 01:57:25"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-patched", "cards": 1, "quant": "Q8_0", "kind": "decode", "ctx": 32000, "tps": 34, "note": "", "at": "2026-10-12 01:57:25"}
+{"model": "qwen2.5-coder-7b", "backend": "vllm", "cards": 1, "quant": "bf16", "kind": "decode", "ctx": 0, "tps": 30, "note": "", "at": "2026-10-12 02:07:56"}
+{"model": "qwen2.5-coder-7b", "backend": "vllm", "cards": 1, "quant": "bf16", "kind": "prefill", "ctx": 4096, "tps": 5772.5, "note": "whole prompt of 4080 tokens", "at": "2026-10-12 02:07:56"}
+{"model": "qwen2.5-coder-7b", "backend": "vllm", "cards": 1, "quant": "bf16", "kind": "decode", "ctx": 4096, "tps": 29.3, "note": "", "at": "2026-10-12 02:07:56"}
+{"model": "qwen2.5-coder-7b", "backend": "vllm", "cards": 1, "quant": "bf16", "kind": "prefill", "ctx": 8192, "tps": 5260.6, "note": "whole prompt of 8176 tokens", "at": "2026-10-12 02:07:56"}
+{"model": "qwen2.5-coder-7b", "backend": "vllm", "cards": 1, "quant": "bf16", "kind": "decode", "ctx": 8192, "tps": 28.8, "note": "", "at": "2026-10-12 02:07:56"}
+{"model": "qwen2.5-coder-7b", "backend": "vllm", "cards": 1, "quant": "bf16", "kind": "prefill", "ctx": 16384, "tps": 4673.6, "note": "whole prompt of 16368 tokens", "at": "2026-10-12 02:07:56"}
+{"model": "qwen2.5-coder-7b", "backend": "vllm", "cards": 1, "quant": "bf16", "kind": "decode", "ctx": 16384, "tps": 27.9, "note": "", "at": "2026-10-12 02:07:56"}
+{"model": "qwen2.5-coder-7b", "backend": "vllm", "cards": 1, "quant": "bf16", "kind": "prefill", "ctx": 32000, "tps": 3762.9, "note": "whole prompt of 31983 tokens", "at": "2026-10-12 02:07:56"}
+{"model": "qwen2.5-coder-7b", "backend": "vllm", "cards": 1, "quant": "bf16", "kind": "decode", "ctx": 32000, "tps": 26.3, "note": "", "at": "2026-10-12 02:07:56"}
+{"model": "qwen2.5-coder-7b", "backend": "vllm", "cards": 2, "quant": "bf16", "kind": "decode", "ctx": 0, "tps": 46.4, "note": "", "at": "2026-10-12 02:10:10"}
+{"model": "qwen2.5-coder-7b", "backend": "vllm", "cards": 2, "quant": "bf16", "kind": "prefill", "ctx": 4096, "tps": 4504.3, "note": "whole prompt of 4080 tokens", "at": "2026-10-12 02:10:10"}
+{"model": "qwen2.5-coder-7b", "backend": "vllm", "cards": 2, "quant": "bf16", "kind": "decode", "ctx": 4096, "tps": 46.1, "note": "", "at": "2026-10-12 02:10:10"}
+{"model": "qwen2.5-coder-7b", "backend": "vllm", "cards": 2, "quant": "bf16", "kind": "prefill", "ctx": 8192, "tps": 4357.7, "note": "whole prompt of 8176 tokens", "at": "2026-10-12 02:10:10"}
+{"model": "qwen2.5-coder-7b", "backend": "vllm", "cards": 2, "quant": "bf16", "kind": "decode", "ctx": 8192, "tps": 43.9, "note": "", "at": "2026-10-12 02:10:10"}
+{"model": "qwen2.5-coder-7b", "backend": "vllm", "cards": 2, "quant": "bf16", "kind": "prefill", "ctx": 16384, "tps": 4087.1, "note": "whole prompt of 16368 tokens", "at": "2026-10-12 02:10:10"}
+{"model": "qwen2.5-coder-7b", "backend": "vllm", "cards": 2, "quant": "bf16", "kind": "decode", "ctx": 16384, "tps": 43.8, "note": "", "at": "2026-10-12 02:10:10"}
+{"model": "qwen2.5-coder-7b", "backend": "vllm", "cards": 2, "quant": "bf16", "kind": "prefill", "ctx": 32000, "tps": 3629.2, "note": "whole prompt of 31983 tokens", "at": "2026-10-12 02:10:10"}
+{"model": "qwen2.5-coder-7b", "backend": "vllm", "cards": 2, "quant": "bf16", "kind": "decode", "ctx": 32000, "tps": 40.1, "note": "", "at": "2026-10-12 02:10:10"}
+{"model": "granite-4.2-30b", "backend": "vllm", "cards": 2, "quant": "GPTQ int4", "kind": "decode", "ctx": 0, "tps": 31.9, "note": "", "at": "2026-10-12 02:16:51"}
+{"model": "granite-4.2-30b", "backend": "vllm", "cards": 2, "quant": "GPTQ int4", "kind": "prefill", "ctx": 4096, "tps": 1397.7, "note": "whole prompt of 4080 tokens", "at": "2026-10-12 02:16:51"}
+{"model": "granite-4.2-30b", "backend": "vllm", "cards": 2, "quant": "GPTQ int4", "kind": "decode", "ctx": 4096, "tps": 31.5, "note": "", "at": "2026-10-12 02:16:51"}
+{"model": "granite-4.2-30b", "backend": "vllm", "cards": 2, "quant": "GPTQ int4", "kind": "prefill", "ctx": 8192, "tps": 1359.1, "note": "whole prompt of 8176 tokens", "at": "2026-10-12 02:16:51"}
+{"model": "granite-4.2-30b", "backend": "vllm", "cards": 2, "quant": "GPTQ int4", "kind": "decode", "ctx": 8192, "tps": 31.1, "note": "", "at": "2026-10-12 02:16:51"}
+{"model": "granite-4.2-30b", "backend": "vllm", "cards": 2, "quant": "GPTQ int4", "kind": "prefill", "ctx": 16384, "tps": 1284.4, "note": "whole prompt of 16368 tokens", "at": "2026-10-12 02:16:51"}
+{"model": "granite-4.2-30b", "backend": "vllm", "cards": 2, "quant": "GPTQ int4", "kind": "decode", "ctx": 16384, "tps": 28.7, "note": "", "at": "2026-10-12 02:16:51"}
+{"model": "granite-4.2-30b", "backend": "vllm", "cards": 2, "quant": "GPTQ int4", "kind": "prefill", "ctx": 32000, "tps": 1151.4, "note": "whole prompt of 31984 tokens", "at": "2026-10-12 02:16:51"}
+{"model": "granite-4.2-30b", "backend": "vllm", "cards": 2, "quant": "GPTQ int4", "kind": "decode", "ctx": 32000, "tps": 25.3, "note": "", "at": "2026-10-12 02:16:51"}
+{"model": "qwen2.5-14b", "backend": "vllm", "cards": 1, "quant": "bf16 (instruct)", "kind": "both", "ctx": 0, "tps": null, "note": "does not fit one card", "at": "2026-10-12 02:16:51"}
+{"model": "qwen2.5-14b", "backend": "vllm", "cards": 2, "quant": "bf16 (instruct)", "kind": "decode", "ctx": 0, "tps": 25.2, "note": "", "at": "2026-10-12 02:33:06"}
+{"model": "qwen2.5-14b", "backend": "vllm", "cards": 2, "quant": "bf16 (instruct)", "kind": "prefill", "ctx": 4096, "tps": 2267, "note": "whole prompt of 4080 tokens", "at": "2026-10-12 02:33:06"}
+{"model": "qwen2.5-14b", "backend": "vllm", "cards": 2, "quant": "bf16 (instruct)", "kind": "decode", "ctx": 4096, "tps": 24.5, "note": "", "at": "2026-10-12 02:33:06"}
+{"model": "qwen2.5-14b", "backend": "vllm", "cards": 2, "quant": "bf16 (instruct)", "kind": "prefill", "ctx": 8192, "tps": 2191.4, "note": "whole prompt of 8176 tokens", "at": "2026-10-12 02:33:06"}
+{"model": "qwen2.5-14b", "backend": "vllm", "cards": 2, "quant": "bf16 (instruct)", "kind": "decode", "ctx": 8192, "tps": 23.8, "note": "", "at": "2026-10-12 02:33:06"}
+{"model": "qwen2.5-14b", "backend": "vllm", "cards": 2, "quant": "bf16 (instruct)", "kind": "prefill", "ctx": 16384, "tps": 2042.9, "note": "whole prompt of 16368 tokens", "at": "2026-10-12 02:33:06"}
+{"model": "qwen2.5-14b", "backend": "vllm", "cards": 2, "quant": "bf16 (instruct)", "kind": "decode", "ctx": 16384, "tps": 22.9, "note": "", "at": "2026-10-12 02:33:06"}
+{"model": "qwen2.5-14b", "backend": "vllm", "cards": 2, "quant": "bf16 (instruct)", "kind": "prefill", "ctx": 32000, "tps": 1811.5, "note": "whole prompt of 31983 tokens", "at": "2026-10-12 02:33:06"}
+{"model": "qwen2.5-14b", "backend": "vllm", "cards": 2, "quant": "bf16 (instruct)", "kind": "decode", "ctx": 32000, "tps": 20.9, "note": "", "at": "2026-10-12 02:33:06"}
+{"model": "qwen2.5-coder-7b", "backend": "sycl-stock", "cards": 1, "quant": "Q8_0", "kind": "prefill", "ctx": 512, "tps": 783.5, "note": "", "at": "2026-10-12 02:37:01"}
+{"model": "qwen2.5-coder-7b", "backend": "sycl-stock", "cards": 1, "quant": "Q8_0", "kind": "prefill", "ctx": 4096, "tps": 774.8, "note": "", "at": "2026-10-12 02:37:01"}
+{"model": "qwen2.5-coder-7b", "backend": "sycl-stock", "cards": 1, "quant": "Q8_0", "kind": "prefill", "ctx": 8192, "tps": 761.5, "note": "", "at": "2026-10-12 02:37:01"}
+{"model": "qwen2.5-coder-7b", "backend": "sycl-stock", "cards": 1, "quant": "Q8_0", "kind": "prefill", "ctx": 16384, "tps": 728.3, "note": "", "at": "2026-10-12 02:37:01"}
+{"model": "qwen2.5-coder-7b", "backend": "sycl-stock", "cards": 1, "quant": "Q8_0", "kind": "prefill", "ctx": 32000, "tps": 675.8, "note": "", "at": "2026-10-12 02:37:01"}
+{"model": "qwen2.5-coder-7b", "backend": "sycl-stock", "cards": 1, "quant": "Q8_0", "kind": "decode", "ctx": 0, "tps": 38.6, "note": "", "at": "2026-10-12 02:39:43"}
+{"model": "qwen2.5-coder-7b", "backend": "sycl-stock", "cards": 1, "quant": "Q8_0", "kind": "decode", "ctx": 4096, "tps": 32, "note": "", "at": "2026-10-12 02:39:43"}
+{"model": "qwen2.5-coder-7b", "backend": "sycl-stock", "cards": 1, "quant": "Q8_0", "kind": "decode", "ctx": 8192, "tps": 26.9, "note": "", "at": "2026-10-12 02:39:43"}
+{"model": "qwen2.5-coder-7b", "backend": "sycl-stock", "cards": 1, "quant": "Q8_0", "kind": "decode", "ctx": 16384, "tps": 20.5, "note": "", "at": "2026-10-12 02:39:43"}
+{"model": "qwen2.5-coder-7b", "backend": "sycl-stock", "cards": 1, "quant": "Q8_0", "kind": "decode", "ctx": 32000, "tps": 13.5, "note": "", "at": "2026-10-12 02:39:43"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-stock", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 512, "tps": 2527, "note": "", "at": "2026-10-12 02:42:42"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-stock", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 4096, "tps": 2256.9, "note": "", "at": "2026-10-12 02:42:42"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-stock", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 8192, "tps": 1529.6, "note": "", "at": "2026-10-12 02:42:42"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-stock", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 16384, "tps": 928.9, "note": "", "at": "2026-10-12 02:42:42"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-stock", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 32000, "tps": 529.3, "note": "", "at": "2026-10-12 02:42:42"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-stock", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 0, "tps": 43.4, "note": "", "at": "2026-10-12 02:44:50"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-stock", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 4096, "tps": 41.5, "note": "", "at": "2026-10-12 02:44:50"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-stock", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 8192, "tps": 39.9, "note": "", "at": "2026-10-12 02:44:50"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-stock", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 16384, "tps": 37.4, "note": "", "at": "2026-10-12 02:44:50"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-stock", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 32000, "tps": 33.1, "note": "", "at": "2026-10-12 02:44:50"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-patched", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 512, "tps": 2677.9, "note": "", "at": "2026-10-12 02:46:33"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-patched", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 4096, "tps": 2988.3, "note": "", "at": "2026-10-12 02:46:33"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-patched", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 8192, "tps": 2341.5, "note": "", "at": "2026-10-12 02:46:33"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-patched", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 16384, "tps": 1613.8, "note": "", "at": "2026-10-12 02:46:33"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-patched", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 32000, "tps": 1009.5, "note": "", "at": "2026-10-12 02:46:33"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-patched", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 0, "tps": 43.4, "note": "", "at": "2026-10-12 02:48:03"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-patched", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 4096, "tps": 41.7, "note": "", "at": "2026-10-12 02:48:03"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-patched", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 8192, "tps": 39.9, "note": "", "at": "2026-10-12 02:48:03"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-patched", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 16384, "tps": 37.4, "note": "", "at": "2026-10-12 02:48:03"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-patched", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 32000, "tps": 33.1, "note": "", "at": "2026-10-12 02:48:03"}
+{"model": "qwen2.5-coder-7b", "backend": "sycl-stock", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 512, "tps": 780.2, "note": "", "at": "2026-10-12 02:51:08"}
+{"model": "qwen2.5-coder-7b", "backend": "sycl-stock", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 4096, "tps": 771.2, "note": "", "at": "2026-10-12 02:51:08"}
+{"model": "qwen2.5-coder-7b", "backend": "sycl-stock", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 8192, "tps": 758.2, "note": "", "at": "2026-10-12 02:51:08"}
+{"model": "qwen2.5-coder-7b", "backend": "sycl-stock", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 16384, "tps": 725.1, "note": "", "at": "2026-10-12 02:51:08"}
+{"model": "qwen2.5-coder-7b", "backend": "sycl-stock", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 32000, "tps": 672.8, "note": "", "at": "2026-10-12 02:51:08"}
+{"model": "qwen2.5-coder-7b", "backend": "sycl-stock", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 0, "tps": 37.4, "note": "", "at": "2026-10-12 02:53:52"}
+{"model": "qwen2.5-coder-7b", "backend": "sycl-stock", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 4096, "tps": 31.1, "note": "", "at": "2026-10-12 02:53:52"}
+{"model": "qwen2.5-coder-7b", "backend": "sycl-stock", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 8192, "tps": 26.3, "note": "", "at": "2026-10-12 02:53:52"}
+{"model": "qwen2.5-coder-7b", "backend": "sycl-stock", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 16384, "tps": 20.2, "note": "", "at": "2026-10-12 02:53:52"}
+{"model": "qwen2.5-coder-7b", "backend": "sycl-stock", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 32000, "tps": 13.4, "note": "", "at": "2026-10-12 02:53:52"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 512, "tps": 3420.9, "note": "", "at": "2026-10-12 02:56:19"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 4096, "tps": 2388.1, "note": "", "at": "2026-10-12 02:56:19"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 8192, "tps": 1746.7, "note": "", "at": "2026-10-12 02:56:19"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 16384, "tps": 1119.5, "note": "", "at": "2026-10-12 02:56:19"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 32000, "tps": 663.3, "note": "", "at": "2026-10-12 02:56:19"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 0, "tps": 66.9, "note": "", "at": "2026-10-12 02:58:01"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 4096, "tps": 63, "note": "", "at": "2026-10-12 02:58:01"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 8192, "tps": 61.2, "note": "", "at": "2026-10-12 02:58:01"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 16384, "tps": 55.7, "note": "", "at": "2026-10-12 02:58:01"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 32000, "tps": 48.3, "note": "", "at": "2026-10-12 02:58:01"}
+{"model": "granite-4.2-30b", "backend": "vulkan-stock", "cards": 1, "quant": "Q4_K_M", "kind": "prefill", "ctx": 512, "tps": 657.9, "note": "", "at": "2026-10-12 03:21:33"}
+{"model": "granite-4.2-30b", "backend": "vulkan-stock", "cards": 1, "quant": "Q4_K_M", "kind": "prefill", "ctx": 4096, "tps": 439, "note": "", "at": "2026-10-12 03:21:33"}
+{"model": "granite-4.2-30b", "backend": "vulkan-stock", "cards": 1, "quant": "Q4_K_M", "kind": "prefill", "ctx": 8192, "tps": 312.7, "note": "", "at": "2026-10-12 03:21:33"}
+{"model": "granite-4.2-30b", "backend": "vulkan-stock", "cards": 1, "quant": "Q4_K_M", "kind": "prefill", "ctx": 16384, "tps": 199.8, "note": "", "at": "2026-10-12 03:21:33"}
+{"model": "granite-4.2-30b", "backend": "vulkan-stock", "cards": 1, "quant": "Q4_K_M", "kind": "prefill", "ctx": 32000, "tps": 55.2, "note": "", "at": "2026-10-12 03:21:33"}
+{"model": "granite-4.2-30b", "backend": "vulkan-stock", "cards": 1, "quant": "Q4_K_M", "kind": "decode", "ctx": 0, "tps": 20.1, "note": "", "at": "2026-10-12 03:35:23"}
+{"model": "granite-4.2-30b", "backend": "vulkan-stock", "cards": 1, "quant": "Q4_K_M", "kind": "decode", "ctx": 4096, "tps": 18.9, "note": "", "at": "2026-10-12 03:35:23"}
+{"model": "granite-4.2-30b", "backend": "vulkan-stock", "cards": 1, "quant": "Q4_K_M", "kind": "decode", "ctx": 8192, "tps": 17.9, "note": "", "at": "2026-10-12 03:35:23"}
+{"model": "granite-4.2-30b", "backend": "vulkan-stock", "cards": 1, "quant": "Q4_K_M", "kind": "decode", "ctx": 16384, "tps": 16.2, "note": "", "at": "2026-10-12 03:35:23"}
+{"model": "granite-4.2-30b", "backend": "vulkan-stock", "cards": 1, "quant": "Q4_K_M", "kind": "decode", "ctx": 32000, "tps": 7.3, "note": "", "at": "2026-10-12 03:35:23"}
+{"model": "granite-4.2-30b", "backend": "vulkan-patched", "cards": 1, "quant": "Q4_K_M", "kind": "prefill", "ctx": 512, "tps": 686.5, "note": "", "at": "2026-10-12 03:48:28"}
+{"model": "granite-4.2-30b", "backend": "vulkan-patched", "cards": 1, "quant": "Q4_K_M", "kind": "prefill", "ctx": 4096, "tps": 558.6, "note": "", "at": "2026-10-12 03:48:28"}
+{"model": "granite-4.2-30b", "backend": "vulkan-patched", "cards": 1, "quant": "Q4_K_M", "kind": "prefill", "ctx": 8192, "tps": 456, "note": "", "at": "2026-10-12 03:48:28"}
+{"model": "granite-4.2-30b", "backend": "vulkan-patched", "cards": 1, "quant": "Q4_K_M", "kind": "prefill", "ctx": 16384, "tps": 334.2, "note": "", "at": "2026-10-12 03:48:28"}
+{"model": "granite-4.2-30b", "backend": "vulkan-patched", "cards": 1, "quant": "Q4_K_M", "kind": "prefill", "ctx": 32000, "tps": 103.3, "note": "", "at": "2026-10-12 03:48:28"}
+{"model": "granite-4.2-30b", "backend": "vulkan-patched", "cards": 1, "quant": "Q4_K_M", "kind": "decode", "ctx": 0, "tps": 20.1, "note": "", "at": "2026-10-12 03:56:50"}
+{"model": "granite-4.2-30b", "backend": "vulkan-patched", "cards": 1, "quant": "Q4_K_M", "kind": "decode", "ctx": 4096, "tps": 18.9, "note": "", "at": "2026-10-12 03:56:50"}
+{"model": "granite-4.2-30b", "backend": "vulkan-patched", "cards": 1, "quant": "Q4_K_M", "kind": "decode", "ctx": 8192, "tps": 17.9, "note": "", "at": "2026-10-12 03:56:50"}
+{"model": "granite-4.2-30b", "backend": "vulkan-patched", "cards": 1, "quant": "Q4_K_M", "kind": "decode", "ctx": 16384, "tps": 16.2, "note": "", "at": "2026-10-12 03:56:50"}
+{"model": "granite-4.2-30b", "backend": "vulkan-patched", "cards": 1, "quant": "Q4_K_M", "kind": "decode", "ctx": 32000, "tps": 7.3, "note": "", "at": "2026-10-12 03:56:50"}
+{"model": "granite-4.2-30b", "backend": "sycl-stock", "cards": 1, "quant": "Q4_K_M", "kind": "prefill", "ctx": 512, "tps": 182.9, "note": "", "at": "2026-10-12 04:36:55"}
+{"model": "granite-4.2-30b", "backend": "sycl-stock", "cards": 1, "quant": "Q4_K_M", "kind": "prefill", "ctx": 4096, "tps": 181.2, "note": "", "at": "2026-10-12 04:36:55"}
+{"model": "granite-4.2-30b", "backend": "sycl-stock", "cards": 1, "quant": "Q4_K_M", "kind": "prefill", "ctx": 8192, "tps": 179.3, "note": "", "at": "2026-10-12 04:36:55"}
+{"model": "granite-4.2-30b", "backend": "sycl-stock", "cards": 1, "quant": "Q4_K_M", "kind": "prefill", "ctx": 16384, "tps": 174.2, "note": "", "at": "2026-10-12 04:36:55"}
+{"model": "granite-4.2-30b", "backend": "sycl-stock", "cards": 1, "quant": "Q4_K_M", "kind": "prefill", "ctx": "-1", "tps": null, "note": "only 4 of 5 results (exit timeout): ", "at": "2026-10-12 04:36:55"}
+{"model": "granite-4.2-30b", "backend": "sycl-stock", "cards": 1, "quant": "Q4_K_M", "kind": "decode", "ctx": 0, "tps": 17.2, "note": "", "at": "2026-10-12 05:17:00"}
+{"model": "granite-4.2-30b", "backend": "sycl-stock", "cards": 1, "quant": "Q4_K_M", "kind": "decode", "ctx": 4096, "tps": 16.2, "note": "", "at": "2026-10-12 05:17:00"}
+{"model": "granite-4.2-30b", "backend": "sycl-stock", "cards": 1, "quant": "Q4_K_M", "kind": "decode", "ctx": 8192, "tps": 15.4, "note": "", "at": "2026-10-12 05:17:00"}
+{"model": "granite-4.2-30b", "backend": "sycl-stock", "cards": 1, "quant": "Q4_K_M", "kind": "decode", "ctx": 16384, "tps": 14, "note": "", "at": "2026-10-12 05:17:00"}
+{"model": "granite-4.2-30b", "backend": "sycl-stock", "cards": 1, "quant": "Q4_K_M", "kind": "decode", "ctx": "-1", "tps": null, "note": "only 4 of 5 results (exit timeout): ", "at": "2026-10-12 05:17:00"}
+{"model": "granite-4.2-30b", "backend": "vllm", "cards": 1, "quant": "GPTQ int4", "kind": "both", "ctx": 0, "tps": null, "note": "failed; see granite-4.2-30b_vllm_1.*", "at": "2026-10-12 05:19:06"}
+{"model": "granite-4.2-30b", "backend": "vulkan-stock", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 512, "tps": 651.6, "note": "", "at": "2026-10-12 05:27:50"}
+{"model": "granite-4.2-30b", "backend": "vulkan-stock", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 4096, "tps": 661.1, "note": "", "at": "2026-10-12 05:27:50"}
+{"model": "granite-4.2-30b", "backend": "vulkan-stock", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 8192, "tps": 476.5, "note": "", "at": "2026-10-12 05:27:50"}
+{"model": "granite-4.2-30b", "backend": "vulkan-stock", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 16384, "tps": 307.7, "note": "", "at": "2026-10-12 05:27:50"}
+{"model": "granite-4.2-30b", "backend": "vulkan-stock", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 32000, "tps": 181.7, "note": "", "at": "2026-10-12 05:27:50"}
+{"model": "granite-4.2-30b", "backend": "vulkan-stock", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 0, "tps": 19.8, "note": "", "at": "2026-10-12 05:33:44"}
+{"model": "granite-4.2-30b", "backend": "vulkan-stock", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 4096, "tps": 18.6, "note": "", "at": "2026-10-12 05:33:44"}
+{"model": "granite-4.2-30b", "backend": "vulkan-stock", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 8192, "tps": 17.7, "note": "", "at": "2026-10-12 05:33:44"}
+{"model": "granite-4.2-30b", "backend": "vulkan-stock", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 16384, "tps": 16, "note": "", "at": "2026-10-12 05:33:44"}
+{"model": "granite-4.2-30b", "backend": "vulkan-stock", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 32000, "tps": 13.6, "note": "", "at": "2026-10-12 05:33:44"}
+{"model": "granite-4.2-30b", "backend": "vulkan-patched", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 512, "tps": 684.9, "note": "", "at": "2026-10-12 05:38:42"}
+{"model": "granite-4.2-30b", "backend": "vulkan-patched", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 4096, "tps": 851.1, "note": "", "at": "2026-10-12 05:38:42"}
+{"model": "granite-4.2-30b", "backend": "vulkan-patched", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 8192, "tps": 698.5, "note": "", "at": "2026-10-12 05:38:42"}
+{"model": "granite-4.2-30b", "backend": "vulkan-patched", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 16384, "tps": 515.1, "note": "", "at": "2026-10-12 05:38:42"}
+{"model": "granite-4.2-30b", "backend": "vulkan-patched", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 32000, "tps": 341.4, "note": "", "at": "2026-10-12 05:38:42"}
+{"model": "granite-4.2-30b", "backend": "vulkan-patched", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 0, "tps": 19.8, "note": "", "at": "2026-10-12 05:42:44"}
+{"model": "granite-4.2-30b", "backend": "vulkan-patched", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 4096, "tps": 18.7, "note": "", "at": "2026-10-12 05:42:44"}
+{"model": "granite-4.2-30b", "backend": "vulkan-patched", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 8192, "tps": 17.7, "note": "", "at": "2026-10-12 05:42:44"}
+{"model": "granite-4.2-30b", "backend": "vulkan-patched", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 16384, "tps": 16, "note": "", "at": "2026-10-12 05:42:44"}
+{"model": "granite-4.2-30b", "backend": "vulkan-patched", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 32000, "tps": 13.6, "note": "", "at": "2026-10-12 05:42:44"}
+{"model": "granite-4.2-30b", "backend": "sycl-stock", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 512, "tps": 182.7, "note": "", "at": "2026-10-12 05:54:58"}
+{"model": "granite-4.2-30b", "backend": "sycl-stock", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 4096, "tps": 181, "note": "", "at": "2026-10-12 05:54:58"}
+{"model": "granite-4.2-30b", "backend": "sycl-stock", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 8192, "tps": 179, "note": "", "at": "2026-10-12 05:54:58"}
+{"model": "granite-4.2-30b", "backend": "sycl-stock", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 16384, "tps": 173.9, "note": "", "at": "2026-10-12 05:54:58"}
+{"model": "granite-4.2-30b", "backend": "sycl-stock", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 32000, "tps": 165.6, "note": "", "at": "2026-10-12 05:54:58"}
+{"model": "granite-4.2-30b", "backend": "sycl-stock", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 0, "tps": 17, "note": "", "at": "2026-10-12 06:02:49"}
+{"model": "granite-4.2-30b", "backend": "sycl-stock", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 4096, "tps": 16, "note": "", "at": "2026-10-12 06:02:49"}
+{"model": "granite-4.2-30b", "backend": "sycl-stock", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 8192, "tps": 15.3, "note": "", "at": "2026-10-12 06:02:49"}
+{"model": "granite-4.2-30b", "backend": "sycl-stock", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 16384, "tps": 13.9, "note": "", "at": "2026-10-12 06:02:49"}
+{"model": "granite-4.2-30b", "backend": "sycl-stock", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 32000, "tps": 11.9, "note": "", "at": "2026-10-12 06:02:49"}
+{"model": "granite-4.2-30b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 512, "tps": 989.4, "note": "", "at": "2026-10-12 06:10:26"}
+{"model": "granite-4.2-30b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 4096, "tps": 716.7, "note": "", "at": "2026-10-12 06:10:26"}
+{"model": "granite-4.2-30b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 8192, "tps": 530.5, "note": "", "at": "2026-10-12 06:10:26"}
+{"model": "granite-4.2-30b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 16384, "tps": 346.8, "note": "", "at": "2026-10-12 06:10:26"}
+{"model": "granite-4.2-30b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 32000, "tps": 210.2, "note": "", "at": "2026-10-12 06:10:26"}
+{"model": "granite-4.2-30b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 0, "tps": 29.5, "note": "", "at": "2026-10-12 06:15:26"}
+{"model": "granite-4.2-30b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 4096, "tps": 27.8, "note": "", "at": "2026-10-12 06:15:26"}
+{"model": "granite-4.2-30b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 8192, "tps": 26.5, "note": "", "at": "2026-10-12 06:15:26"}
+{"model": "granite-4.2-30b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 16384, "tps": 24.2, "note": "", "at": "2026-10-12 06:15:26"}
+{"model": "granite-4.2-30b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 32000, "tps": 20.2, "note": "", "at": "2026-10-12 06:15:26"}
+{"model": "qwen2.5-14b", "backend": "vulkan-stock", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 512, "tps": 1289.3, "note": "", "at": "2026-10-12 06:26:35"}
+{"model": "qwen2.5-14b", "backend": "vulkan-stock", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 4096, "tps": 667.1, "note": "", "at": "2026-10-12 06:26:35"}
+{"model": "qwen2.5-14b", "backend": "vulkan-stock", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 8192, "tps": 421.9, "note": "", "at": "2026-10-12 06:26:35"}
+{"model": "qwen2.5-14b", "backend": "vulkan-stock", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 16384, "tps": 244.2, "note": "", "at": "2026-10-12 06:26:35"}
+{"model": "qwen2.5-14b", "backend": "vulkan-stock", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 32000, "tps": 135.6, "note": "", "at": "2026-10-12 06:26:35"}
+{"model": "qwen2.5-14b", "backend": "vulkan-stock", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 0, "tps": 38.8, "note": "", "at": "2026-10-12 06:33:05"}
+{"model": "qwen2.5-14b", "backend": "vulkan-stock", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 4096, "tps": 35.3, "note": "", "at": "2026-10-12 06:33:05"}
+{"model": "qwen2.5-14b", "backend": "vulkan-stock", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 8192, "tps": 32.8, "note": "", "at": "2026-10-12 06:33:05"}
+{"model": "qwen2.5-14b", "backend": "vulkan-stock", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 16384, "tps": 28.6, "note": "", "at": "2026-10-12 06:33:05"}
+{"model": "qwen2.5-14b", "backend": "vulkan-stock", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 32000, "tps": 22.9, "note": "", "at": "2026-10-12 06:33:05"}
+{"model": "qwen2.5-14b", "backend": "vulkan-patched", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 512, "tps": 1399.5, "note": "", "at": "2026-10-12 06:38:32"}
+{"model": "qwen2.5-14b", "backend": "vulkan-patched", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 4096, "tps": 996.3, "note": "", "at": "2026-10-12 06:38:32"}
+{"model": "qwen2.5-14b", "backend": "vulkan-patched", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 8192, "tps": 737.2, "note": "", "at": "2026-10-12 06:38:32"}
+{"model": "qwen2.5-14b", "backend": "vulkan-patched", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 16384, "tps": 486.5, "note": "", "at": "2026-10-12 06:38:32"}
+{"model": "qwen2.5-14b", "backend": "vulkan-patched", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 32000, "tps": 295.2, "note": "", "at": "2026-10-12 06:38:32"}
+{"model": "qwen2.5-14b", "backend": "vulkan-patched", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 0, "tps": 38.8, "note": "", "at": "2026-10-12 06:42:08"}
+{"model": "qwen2.5-14b", "backend": "vulkan-patched", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 4096, "tps": 35.5, "note": "", "at": "2026-10-12 06:42:08"}
+{"model": "qwen2.5-14b", "backend": "vulkan-patched", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 8192, "tps": 32.8, "note": "", "at": "2026-10-12 06:42:08"}
+{"model": "qwen2.5-14b", "backend": "vulkan-patched", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 16384, "tps": 28.6, "note": "", "at": "2026-10-12 06:42:08"}
+{"model": "qwen2.5-14b", "backend": "vulkan-patched", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 32000, "tps": 22.9, "note": "", "at": "2026-10-12 06:42:08"}
+{"model": "qwen2.5-14b", "backend": "sycl-stock", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 512, "tps": 387.3, "note": "", "at": "2026-10-12 06:48:19"}
+{"model": "qwen2.5-14b", "backend": "sycl-stock", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 4096, "tps": 381.3, "note": "", "at": "2026-10-12 06:48:19"}
+{"model": "qwen2.5-14b", "backend": "sycl-stock", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 8192, "tps": 373.7, "note": "", "at": "2026-10-12 06:48:19"}
+{"model": "qwen2.5-14b", "backend": "sycl-stock", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 16384, "tps": 354.9, "note": "", "at": "2026-10-12 06:48:19"}
+{"model": "qwen2.5-14b", "backend": "sycl-stock", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 32000, "tps": 326.2, "note": "", "at": "2026-10-12 06:48:19"}
+{"model": "qwen2.5-14b", "backend": "sycl-stock", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 0, "tps": 34.8, "note": "", "at": "2026-10-12 06:53:19"}
+{"model": "qwen2.5-14b", "backend": "sycl-stock", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 4096, "tps": 21.5, "note": "", "at": "2026-10-12 06:53:19"}
+{"model": "qwen2.5-14b", "backend": "sycl-stock", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 8192, "tps": 15.7, "note": "", "at": "2026-10-12 06:53:19"}
+{"model": "qwen2.5-14b", "backend": "sycl-stock", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 16384, "tps": 10.1, "note": "", "at": "2026-10-12 06:53:19"}
+{"model": "qwen2.5-14b", "backend": "sycl-stock", "cards": 1, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 32000, "tps": 6, "note": "", "at": "2026-10-12 06:53:19"}
+{"model": "qwen2.5-14b", "backend": "vulkan-stock", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 512, "tps": 1275.4, "note": "", "at": "2026-10-12 07:00:39"}
+{"model": "qwen2.5-14b", "backend": "vulkan-stock", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 4096, "tps": 982.8, "note": "", "at": "2026-10-12 07:00:39"}
+{"model": "qwen2.5-14b", "backend": "vulkan-stock", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 8192, "tps": 634.5, "note": "", "at": "2026-10-12 07:00:39"}
+{"model": "qwen2.5-14b", "backend": "vulkan-stock", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 16384, "tps": 373.4, "note": "", "at": "2026-10-12 07:00:39"}
+{"model": "qwen2.5-14b", "backend": "vulkan-stock", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 32000, "tps": 207.8, "note": "", "at": "2026-10-12 07:00:39"}
+{"model": "qwen2.5-14b", "backend": "vulkan-stock", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 0, "tps": 37.9, "note": "", "at": "2026-10-12 07:05:13"}
+{"model": "qwen2.5-14b", "backend": "vulkan-stock", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 4096, "tps": 34.5, "note": "", "at": "2026-10-12 07:05:13"}
+{"model": "qwen2.5-14b", "backend": "vulkan-stock", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 8192, "tps": 32.1, "note": "", "at": "2026-10-12 07:05:13"}
+{"model": "qwen2.5-14b", "backend": "vulkan-stock", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 16384, "tps": 27.9, "note": "", "at": "2026-10-12 07:05:13"}
+{"model": "qwen2.5-14b", "backend": "vulkan-stock", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 32000, "tps": 22.4, "note": "", "at": "2026-10-12 07:05:13"}
+{"model": "qwen2.5-14b", "backend": "vulkan-patched", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 512, "tps": 1380.9, "note": "", "at": "2026-10-12 07:08:51"}
+{"model": "qwen2.5-14b", "backend": "vulkan-patched", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 4096, "tps": 1481.8, "note": "", "at": "2026-10-12 07:08:51"}
+{"model": "qwen2.5-14b", "backend": "vulkan-patched", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 8192, "tps": 1109.8, "note": "", "at": "2026-10-12 07:08:51"}
+{"model": "qwen2.5-14b", "backend": "vulkan-patched", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 16384, "tps": 742.3, "note": "", "at": "2026-10-12 07:08:51"}
+{"model": "qwen2.5-14b", "backend": "vulkan-patched", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 32000, "tps": 451, "note": "", "at": "2026-10-12 07:08:51"}
+{"model": "qwen2.5-14b", "backend": "vulkan-patched", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 0, "tps": 37.9, "note": "", "at": "2026-10-12 07:11:33"}
+{"model": "qwen2.5-14b", "backend": "vulkan-patched", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 4096, "tps": 34.6, "note": "", "at": "2026-10-12 07:11:33"}
+{"model": "qwen2.5-14b", "backend": "vulkan-patched", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 8192, "tps": 32.1, "note": "", "at": "2026-10-12 07:11:33"}
+{"model": "qwen2.5-14b", "backend": "vulkan-patched", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 16384, "tps": 28, "note": "", "at": "2026-10-12 07:11:33"}
+{"model": "qwen2.5-14b", "backend": "vulkan-patched", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 32000, "tps": 22.3, "note": "", "at": "2026-10-12 07:11:33"}
+{"model": "qwen2.5-14b", "backend": "sycl-stock", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 512, "tps": 386.4, "note": "", "at": "2026-10-12 07:17:44"}
+{"model": "qwen2.5-14b", "backend": "sycl-stock", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 4096, "tps": 380, "note": "", "at": "2026-10-12 07:17:44"}
+{"model": "qwen2.5-14b", "backend": "sycl-stock", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 8192, "tps": 372.6, "note": "", "at": "2026-10-12 07:17:44"}
+{"model": "qwen2.5-14b", "backend": "sycl-stock", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 16384, "tps": 353.8, "note": "", "at": "2026-10-12 07:17:44"}
+{"model": "qwen2.5-14b", "backend": "sycl-stock", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 32000, "tps": 325.4, "note": "", "at": "2026-10-12 07:17:44"}
+{"model": "qwen2.5-14b", "backend": "sycl-stock", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 0, "tps": 33.8, "note": "", "at": "2026-10-12 07:22:47"}
+{"model": "qwen2.5-14b", "backend": "sycl-stock", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 4096, "tps": 21, "note": "", "at": "2026-10-12 07:22:47"}
+{"model": "qwen2.5-14b", "backend": "sycl-stock", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 8192, "tps": 15.4, "note": "", "at": "2026-10-12 07:22:47"}
+{"model": "qwen2.5-14b", "backend": "sycl-stock", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 16384, "tps": 10, "note": "", "at": "2026-10-12 07:22:47"}
+{"model": "qwen2.5-14b", "backend": "sycl-stock", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 32000, "tps": 5.9, "note": "", "at": "2026-10-12 07:22:47"}
+{"model": "qwen2.5-14b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 512, "tps": 1643.5, "note": "", "at": "2026-10-12 07:29:08"}
+{"model": "qwen2.5-14b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 4096, "tps": 1038.6, "note": "", "at": "2026-10-12 07:29:08"}
+{"model": "qwen2.5-14b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 8192, "tps": 701.7, "note": "", "at": "2026-10-12 07:29:08"}
+{"model": "qwen2.5-14b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 16384, "tps": 426, "note": "", "at": "2026-10-12 07:29:08"}
+{"model": "qwen2.5-14b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 32000, "tps": 244.4, "note": "", "at": "2026-10-12 07:29:08"}
+{"model": "qwen2.5-14b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 0, "tps": 50.2, "note": "", "at": "2026-10-12 07:33:01"}
+{"model": "qwen2.5-14b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 4096, "tps": 46.1, "note": "", "at": "2026-10-12 07:33:01"}
+{"model": "qwen2.5-14b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 8192, "tps": 43.1, "note": "", "at": "2026-10-12 07:33:01"}
+{"model": "qwen2.5-14b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 16384, "tps": 38.3, "note": "", "at": "2026-10-12 07:33:01"}
+{"model": "qwen2.5-14b", "backend": "vulkan-allreduce", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 32000, "tps": 31.3, "note": "", "at": "2026-10-12 07:33:01"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 512, "tps": 3530.7, "note": "", "at": "2026-10-12 07:41:37"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 4096, "tps": 2832.8, "note": "", "at": "2026-10-12 07:41:37"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 8192, "tps": 2299.5, "note": "", "at": "2026-10-12 07:41:37"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 16384, "tps": 1656, "note": "", "at": "2026-10-12 07:41:37"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q8_0", "kind": "prefill", "ctx": 32000, "tps": 1060.1, "note": "", "at": "2026-10-12 07:41:37"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 0, "tps": 66, "note": "", "at": "2026-10-12 07:42:57"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 4096, "tps": 63.4, "note": "", "at": "2026-10-12 07:42:57"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 8192, "tps": 60.8, "note": "", "at": "2026-10-12 07:42:57"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 16384, "tps": 56.5, "note": "", "at": "2026-10-12 07:42:57"}
+{"model": "qwen2.5-coder-7b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q8_0", "kind": "decode", "ctx": 32000, "tps": 48.6, "note": "", "at": "2026-10-12 07:42:57"}
+{"model": "granite-4.2-30b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 512, "tps": 1025.2, "note": "", "at": "2026-10-12 07:47:23"}
+{"model": "granite-4.2-30b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 4096, "tps": 875.8, "note": "", "at": "2026-10-12 07:47:23"}
+{"model": "granite-4.2-30b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 8192, "tps": 748.1, "note": "", "at": "2026-10-12 07:47:23"}
+{"model": "granite-4.2-30b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 16384, "tps": 576.1, "note": "", "at": "2026-10-12 07:47:23"}
+{"model": "granite-4.2-30b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q4_K_M", "kind": "prefill", "ctx": 32000, "tps": 399.2, "note": "", "at": "2026-10-12 07:47:23"}
+{"model": "granite-4.2-30b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 0, "tps": 29.3, "note": "", "at": "2026-10-12 07:50:47"}
+{"model": "granite-4.2-30b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 4096, "tps": 27.9, "note": "", "at": "2026-10-12 07:50:47"}
+{"model": "granite-4.2-30b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 8192, "tps": 26.3, "note": "", "at": "2026-10-12 07:50:47"}
+{"model": "granite-4.2-30b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 16384, "tps": 23.9, "note": "", "at": "2026-10-12 07:50:47"}
+{"model": "granite-4.2-30b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q4_K_M", "kind": "decode", "ctx": 32000, "tps": 20.3, "note": "", "at": "2026-10-12 07:50:47"}
+{"model": "qwen2.5-14b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 512, "tps": 1730.9, "note": "", "at": "2026-10-12 07:54:19"}
+{"model": "qwen2.5-14b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 4096, "tps": 1341.3, "note": "", "at": "2026-10-12 07:54:19"}
+{"model": "qwen2.5-14b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 8192, "tps": 1067.4, "note": "", "at": "2026-10-12 07:54:19"}
+{"model": "qwen2.5-14b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 16384, "tps": 745.9, "note": "", "at": "2026-10-12 07:54:19"}
+{"model": "qwen2.5-14b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "prefill", "ctx": 32000, "tps": 476.4, "note": "", "at": "2026-10-12 07:54:19"}
+{"model": "qwen2.5-14b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 0, "tps": 50.2, "note": "", "at": "2026-10-12 07:56:47"}
+{"model": "qwen2.5-14b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 4096, "tps": 46.2, "note": "", "at": "2026-10-12 07:56:47"}
+{"model": "qwen2.5-14b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 8192, "tps": 43.1, "note": "", "at": "2026-10-12 07:56:47"}
+{"model": "qwen2.5-14b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 16384, "tps": 38.7, "note": "", "at": "2026-10-12 07:56:47"}
+{"model": "qwen2.5-14b", "backend": "vulkan-allreduce-fa", "cards": 2, "quant": "Q4_K_M (coder)", "kind": "decode", "ctx": 32000, "tps": 31.5, "note": "", "at": "2026-10-12 07:56:47"}

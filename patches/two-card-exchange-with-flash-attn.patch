@@ -1,0 +1,1095 @@
+diff --git a/ggml/src/ggml-backend-meta.cpp b/ggml/src/ggml-backend-meta.cpp
+index 7c1c0b8..9b08964 100644
+--- a/ggml/src/ggml-backend-meta.cpp
++++ b/ggml/src/ggml-backend-meta.cpp
+@@ -10,6 +10,7 @@
+ #include <cmath>
+ #include <cstddef>
+ #include <cstdint>
++#include <cstdlib>
+ #include <cstring>
+ #include <map>
+ #include <memory>
+@@ -2437,6 +2438,25 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
+     };
+ 
+ 
++    // GGML_META_PROFILE=1: time the all-reduces between subgraphs. Each one is timed from a point where every backend
++    // has finished the preceding subgraph to the point where the all-reduce has completed on every backend. The extra
++    // synchronizations cost speed, so use this to attribute time, not to benchmark. Printed every 64 graphs.
++    // GGML_META_PROFILE=2: no added synchronization; time the CPU's own work in this call (recording and submitting)
++    // and the gap until the next call (the caller waiting for the backends, sampling). A gap near zero means the CPU
++    // is the bottleneck; a gap near the whole graph means the backends are.
++    static const int profile = getenv("GGML_META_PROFILE") != nullptr ? atoi(getenv("GGML_META_PROFILE")) : 0;
++    static int64_t prof_graphs = 0, prof_reduces = 0, prof_reduce_us = 0, prof_reduce_bytes = 0, prof_graph_us = 0;
++    static int64_t prof_submit_us = 0, prof_gap_us = 0, prof_t_prev_end = 0;
++    const int64_t prof_t_graph = profile ? ggml_time_us() : 0;
++    if (profile == 2 && prof_t_prev_end != 0) {
++        prof_gap_us += prof_t_graph - prof_t_prev_end;
++    }
++    auto sync_all = [&]() {
++        for (size_t j = 0; j < n_backends; j++) {
++            ggml_backend_synchronize(backend_ctx->backend_configs[j].backend);
++        }
++    };
++
+     for (size_t i = 0; i < backend_ctx->n_subgraphs; i++) {
+         for (size_t j = 0; j < n_backends; j++) {
+             auto & bcj = backend_ctx->backend_configs[j];
+@@ -2447,6 +2467,12 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
+         }
+ 
+         if (n_backends > 1 && i < backend_ctx->n_subgraphs - 1) {
++            int64_t prof_t_reduce = 0;
++            if (profile == 1) {
++                sync_all();
++                prof_t_reduce = ggml_time_us();
++            }
++
+             bool backend_allreduce_success = false;
+             if (backend_ctx->comm_ctx) {
+                 std::vector<ggml_tensor *> nodes;
+@@ -2465,6 +2491,37 @@ static enum ggml_status ggml_backend_meta_graph_compute(ggml_backend_t backend,
+                     return status;
+                 }
+             }
++
++            if (profile == 1) {
++                sync_all();
++                prof_reduce_us += ggml_time_us() - prof_t_reduce;
++                prof_reduces++;
++                const ggml_cgraph * cg = backend_ctx->backend_configs[0].cgraphs[i].cgraph_main;
++                prof_reduce_bytes += ggml_nbytes(cg->nodes[cg->n_nodes - 1]);
++            }
++        }
++    }
++
++    if (profile == 1) {
++        sync_all();
++        prof_graph_us += ggml_time_us() - prof_t_graph;
++        if (++prof_graphs % 64 == 0) {
++            // straight to stderr: llama-bench silences the ggml log unless -v
++            fprintf(stderr, "%s: last 64 graphs: %.1f all-reduces/graph, %.1f us each (%.1f KB), %.0f us/graph, all-reduce share %.0f%%\n",
++                __func__, prof_reduces / 64.0, prof_reduces ? (double) prof_reduce_us / prof_reduces : 0.0,
++                prof_reduces ? prof_reduce_bytes / 1024.0 / prof_reduces : 0.0, prof_graph_us / 64.0,
++                prof_graph_us ? 100.0 * prof_reduce_us / prof_graph_us : 0.0);
++            prof_reduces = prof_reduce_us = prof_reduce_bytes = prof_graph_us = 0;
++        }
++    } else if (profile == 2) {
++        prof_t_prev_end = ggml_time_us();
++        prof_submit_us += prof_t_prev_end - prof_t_graph;
++        if (++prof_graphs % 64 == 0) {
++            fprintf(stderr, "%s: last 64 graphs: CPU submit %.0f us/graph, gap to next graph %.0f us/graph (%.0f%% of the %.0f us total)\n",
++                __func__, prof_submit_us / 64.0, prof_gap_us / 64.0,
++                (prof_submit_us + prof_gap_us) ? 100.0 * prof_gap_us / (prof_submit_us + prof_gap_us) : 0.0,
++                (prof_submit_us + prof_gap_us) / 64.0);
++            prof_submit_us = prof_gap_us = 0;
+         }
+     }
+     return GGML_STATUS_SUCCESS;
+diff --git a/ggml/src/ggml-vulkan/ggml-vulkan-buffers.cpp b/ggml/src/ggml-vulkan/ggml-vulkan-buffers.cpp
+index 4d4c849..591116b 100644
+--- a/ggml/src/ggml-vulkan/ggml-vulkan-buffers.cpp
++++ b/ggml/src/ggml-vulkan/ggml-vulkan-buffers.cpp
+@@ -756,7 +756,9 @@ ggml_backend_buffer_i ggml_backend_vk_buffer_interface = {
+     /* .reset           = */ NULL,
+ };
+ 
+-vk_buffer ggml_vk_buffer_from_host_ptr(vk_device & device, void * ptr, size_t size) {
++// cached = false asks for a memory type without HOST_CACHED: on Intel discrete GPUs that is the mapping the GPU
++// itself does not cache, which the two-device all-reduce needs so one device's writes are seen by the other's polls.
++vk_buffer ggml_vk_buffer_from_host_ptr(vk_device & device, void * ptr, size_t size, bool cached) {
+     if (!device->external_memory_host) {
+         return {};
+     }
+@@ -769,7 +771,10 @@ vk_buffer ggml_vk_buffer_from_host_ptr(vk_device & device, void * ptr, size_t si
+         return {};
+     }
+ 
+-    const vk::MemoryPropertyFlags property_flags = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostCached;
++    vk::MemoryPropertyFlags property_flags = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
++    if (cached) {
++        property_flags |= vk::MemoryPropertyFlagBits::eHostCached;
++    }
+ 
+     vk_buffer buf {};
+     try {
+diff --git a/ggml/src/ggml-vulkan/ggml-vulkan-common.h b/ggml/src/ggml-vulkan/ggml-vulkan-common.h
+index 4ae5fea..0cfffd0 100644
+--- a/ggml/src/ggml-vulkan/ggml-vulkan-common.h
++++ b/ggml/src/ggml-vulkan/ggml-vulkan-common.h
+@@ -57,7 +57,7 @@ void ggml_vk_buffer_copy_async(vk_context& ctx, vk_buffer& dst, size_t dst_offse
+ void ggml_vk_buffer_copy(vk_buffer& dst, size_t dst_offset, vk_buffer& src, size_t src_offset, size_t size);
+ void ggml_vk_buffer_memset_async(vk_context& ctx, vk_buffer& dst, size_t offset, uint32_t c, size_t size);
+ void ggml_vk_buffer_memset(vk_buffer& dst, size_t offset, uint32_t c, size_t size);
+-vk_buffer ggml_vk_buffer_from_host_ptr(vk_device & device, void * ptr, size_t size);
++vk_buffer ggml_vk_buffer_from_host_ptr(vk_device & device, void * ptr, size_t size, bool cached = true);
+ 
+ // pipelines
+ uint64_t vk_tensor_offset(const ggml_tensor * tensor);
+diff --git a/ggml/src/ggml-vulkan/ggml-vulkan-types.h b/ggml/src/ggml-vulkan/ggml-vulkan-types.h
+index 252359b..f3842c7 100644
+--- a/ggml/src/ggml-vulkan/ggml-vulkan-types.h
++++ b/ggml/src/ggml-vulkan/ggml-vulkan-types.h
+@@ -441,10 +441,11 @@ struct vk_fa_pipeline_state {
+     uint32_t limit_occupancy_shmem;
+     ggml_type k_type;
+     ggml_type v_type;
++    uint32_t mat_m;   // coopmat1: M of the cooperative-matrix tile (16, or 8 where only 8x16x16 is offered); 0 = not applicable
+ 
+     bool operator<(const vk_fa_pipeline_state &b) const {
+-        return std::tie(HSK, HSV, Br, Bc, D_split, row_split, shmem_staging, path, workgroup_size, subgroup_size, aligned, f32acc, flags, limit_occupancy_shmem, k_type, v_type) <
+-               std::tie(b.HSK, b.HSV, b.Br, b.Bc, b.D_split, b.row_split, b.shmem_staging, b.path, b.workgroup_size, b.subgroup_size, b.aligned, b.f32acc, b.flags, b.limit_occupancy_shmem, b.k_type, b.v_type);
++        return std::tie(HSK, HSV, Br, Bc, D_split, row_split, shmem_staging, path, workgroup_size, subgroup_size, aligned, f32acc, flags, limit_occupancy_shmem, k_type, v_type, mat_m) <
++               std::tie(b.HSK, b.HSV, b.Br, b.Bc, b.D_split, b.row_split, b.shmem_staging, b.path, b.workgroup_size, b.subgroup_size, b.aligned, b.f32acc, b.flags, b.limit_occupancy_shmem, b.k_type, b.v_type, b.mat_m);
+     }
+ };
+ 
+@@ -742,6 +743,9 @@ struct vk_device_struct {
+     bool coopmat_bf16_support {};
+     bool coopmat_support_16x16x16_f16acc {};
+     bool coopmat_support_16x16x16_f32acc {};
++    // some devices expose 8x16x16 for f16 and no 16x16x16 (observed: Intel Xe2, Arc Pro B60); the coopmat1 FA kernel runs with an 8-row tile there
++    bool coopmat_support_8x16x16_f16acc {};
++    bool coopmat_support_8x16x16_f32acc {};
+     bool coopmat1_fa_support {};
+     uint32_t coopmat_m;
+     uint32_t coopmat_n;
+@@ -1347,6 +1351,7 @@ struct vk_fa_tuning_params {
+     bool shmem_staging;
+     bool disable_subgroups;
+     uint32_t limit_occupancy_shmem;
++    uint32_t mat_m = 0;   // coopmat1: M of the cooperative-matrix tile (16 normally, 8 where only 8x16x16 is offered)
+ 
+     void print() const {
+         std::cerr << "path=" << path << " workgroup_size=" << workgroup_size << " subgroup_size=" << subgroup_size <<
+diff --git a/ggml/src/ggml-vulkan/ggml-vulkan.cpp b/ggml/src/ggml-vulkan/ggml-vulkan.cpp
+index ce40bae..ed67b22 100644
+--- a/ggml/src/ggml-vulkan/ggml-vulkan.cpp
++++ b/ggml/src/ggml-vulkan/ggml-vulkan.cpp
+@@ -1,5 +1,9 @@
+ #include "ggml-vulkan-common.h"
+ 
++// for the two-device all-reduce's relay thread
++#include <atomic>
++#include <thread>
++
+ namespace {
+ inline std::ostream & operator<<(std::ostream & os, vk::Buffer buffer) {
+     return os << static_cast<VkBuffer>(buffer);
+@@ -1272,24 +1276,50 @@ static vk_fa_tuning_params get_fa_tuning_params_coopmat1(const vk_device& device
+     GGML_UNUSED(n_kv);
+     GGML_UNUSED(k_type);
+     GGML_UNUSED(v_type);
+-    GGML_UNUSED(f32acc);
+ 
+     vk_fa_tuning_params result{};
+     result.path = FA_COOPMAT1;
+ 
+     const uint32_t D = hsk | hsv;
+ 
++    // The cooperative-matrix tile is M x 16 x 16. Most devices offer M = 16; Intel Xe2 (observed: Arc Pro B60) offers only M = 8 for f16.
++    // The shader takes M as specialization constant 16 (MatM): the KV rows per subgroup in K*Q^T and the query rows per P*V tile.
++    const bool has16 = f32acc ? device->coopmat_support_16x16x16_f32acc : device->coopmat_support_16x16x16_f16acc;
++    const bool has8  = f32acc ? device->coopmat_support_8x16x16_f32acc  : device->coopmat_support_8x16x16_f16acc;
++    result.mat_m = has16 ? 16 : (has8 ? 8 : 0);
++
+     const uint32_t coopmat_block_rows = 16;
+-    const uint32_t coopmat_block_cols = 16;
++    const uint32_t coopmat_block_cols = result.mat_m ? result.mat_m : 16;
+ 
+-    const uint32_t num_subgroups = 4;
++    // Intel executes cooperative-matrix ops at its minimum subgroup width (16 on Xe), as the coopmat1 matmul pipelines
++    // already assume.
++    result.subgroup_size = (device->vendor_id == VK_VENDOR_ID_INTEL && device->subgroup_size_control) ? device->subgroup_min_size : device->subgroup_size;
++
++    // Subgroups per workgroup (row_split). The shader requires:
++    //   block_rows / row_split to be a multiple of 4 (the softmax walks its rows four at a time), so row_split <= 4;
++    //   block_cols = M * row_split to be a multiple of 16 (the tile's K), so row_split >= 2 when M == 8;
++    //   block_cols >= subgroup_size and a multiple of it: the softmax column loops that write Psh (the P operand of
++    //   P*V) give each thread block_cols / subgroup_size columns, and zero columns means Psh is never written.
++    // With M == 8 that leaves 2 or 4 subgroups; 2 measured faster on Arc Pro B60 (pp512 at 16K depth: 341 vs 290 tok/s).
++    // If 2 would leave block_cols below the subgroup width (a 32-wide subgroup on an 8-row device), take 4 instead;
++    // get_fa_tuning_params checks the final topology and falls back to the scalar path if it still does not fit.
++    uint32_t num_subgroups = result.mat_m == 8 ? 2 : 4;
++    if (coopmat_block_cols * num_subgroups < result.subgroup_size) {
++        num_subgroups = 4;
++    }
+ 
+     result.block_rows = coopmat_block_rows;
+     result.block_cols = coopmat_block_cols * num_subgroups;
+     result.row_split = num_subgroups;
+-    result.subgroup_size = device->subgroup_size;
+     result.workgroup_size = num_subgroups * result.subgroup_size;
+ 
++    // fixed relationships of this shader; a future constant change must not silently break them
++    GGML_ASSERT(result.block_rows == 16);
++    GGML_ASSERT(result.row_split > 0 && result.block_rows % result.row_split == 0);
++    GGML_ASSERT((result.block_rows / result.row_split) % 4 == 0);
++    GGML_ASSERT(result.block_cols == coopmat_block_cols * result.row_split && result.block_cols % 16 == 0);
++    GGML_ASSERT(result.workgroup_size == result.row_split * result.subgroup_size);
++
+     const uint32_t D_lsb = D ^ (D & (D-1));  // extract lowest set bit
+     result.d_split = std::min(std::min(result.subgroup_size, 8u), D_lsb / 4);
+ 
+@@ -1343,12 +1373,14 @@ vk_fa_tuning_params get_fa_tuning_params(const vk_device& device, uint32_t hsk,
+     }
+ 
+     if (path == FA_COOPMAT1) {
+-        bool shape_ok = (f32acc && device->coopmat_support_16x16x16_f32acc) ||
+-                        (!f32acc && device->coopmat_support_16x16x16_f16acc);
++        bool shape_ok = (f32acc && (device->coopmat_support_16x16x16_f32acc || device->coopmat_support_8x16x16_f32acc)) ||
++                        (!f32acc && (device->coopmat_support_16x16x16_f16acc || device->coopmat_support_8x16x16_f16acc));
+         const vk_fa_tuning_params params = get_fa_tuning_params_coopmat1(device, hsk, hsv, n_rows, n_kv, k_type, v_type, f32acc);
+         bool shmem_ok = ggml_vk_flash_attn_coopmat_shmem_support(device, params, hsk, hsv, f32acc, k_type, v_type);
++        // the softmax gives each thread block_cols / subgroup_size columns; zero columns leaves Psh unwritten (see get_fa_tuning_params_coopmat1)
++        bool topology_ok = params.subgroup_size > 0 && params.block_cols >= params.subgroup_size && params.block_cols % params.subgroup_size == 0;
+ 
+-        if (!shape_ok || !shmem_ok) {
++        if (!shape_ok || !shmem_ok || !topology_ok) {
+             path = FA_SCALAR;
+         }
+     }
+@@ -1383,7 +1415,7 @@ vk_fa_pipeline_state get_fa_pipeline_state(const vk_device& device, const vk_fa_
+ 
+     const uint32_t subgroup_size = params.disable_subgroups ? 0 : params.subgroup_size;
+ 
+-    return vk_fa_pipeline_state{hsk, hsv, params.block_rows, params.block_cols, params.d_split, params.row_split, params.shmem_staging, params.path, params.workgroup_size, subgroup_size, aligned, f32acc, flags, params.limit_occupancy_shmem, k_type, v_type};
++    return vk_fa_pipeline_state{hsk, hsv, params.block_rows, params.block_cols, params.d_split, params.row_split, params.shmem_staging, params.path, params.workgroup_size, subgroup_size, aligned, f32acc, flags, params.limit_occupancy_shmem, k_type, v_type, params.mat_m};
+ }
+ 
+ static uint32_t fa_block_bytes(ggml_type t) {
+@@ -1411,6 +1443,7 @@ static std::vector<uint32_t> get_fa_spec_constants(const vk_fa_pipeline_state& s
+         /*13 FaTypeV         */ static_cast<uint32_t>(state.v_type),
+         /*14 FaBlockBytesK   */ fa_block_bytes(state.k_type),
+         /*15 FaBlockBytesV   */ fa_block_bytes(state.v_type),
++        /*16 MatM (cm1 only) */ state.mat_m ? state.mat_m : 16u,
+     };
+ }
+ 
+@@ -4439,7 +4472,6 @@ vk_device ggml_vk_get_device(size_t idx) {
+         if (device->external_memory_host) {
+             device_extensions.push_back("VK_EXT_external_memory_host");
+         }
+-
+ #if defined(VK_EXT_shader_64bit_indexing)
+         VkPhysicalDeviceShader64BitIndexingFeaturesEXT shader_64bit_indexing_features {};
+         shader_64bit_indexing_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_64_BIT_INDEXING_FEATURES_EXT;
+@@ -4684,6 +4716,9 @@ vk_device ggml_vk_get_device(size_t idx) {
+                         if (prop.MSize == 16 && prop.NSize == 16 && prop.KSize == 16) {
+                             device->coopmat_support_16x16x16_f32acc = true;
+                         }
++                        if (prop.MSize == 8 && prop.NSize == 16 && prop.KSize == 16) {
++                            device->coopmat_support_8x16x16_f32acc = true;
++                        }
+                     } else if ((vk::ComponentTypeKHR)prop.CType == vk::ComponentTypeKHR::eFloat16 &&
+                                (vk::ComponentTypeKHR)prop.ResultType == vk::ComponentTypeKHR::eFloat16) {
+                         // coopmat sizes not set yet
+@@ -4699,6 +4734,9 @@ vk_device ggml_vk_get_device(size_t idx) {
+                         if (prop.MSize == 16 && prop.NSize == 16 && prop.KSize == 16) {
+                             device->coopmat_support_16x16x16_f16acc = true;
+                         }
++                        if (prop.MSize == 8 && prop.NSize == 16 && prop.KSize == 16) {
++                            device->coopmat_support_8x16x16_f16acc = true;
++                        }
+                     }
+                 } else if ((vk::ComponentTypeKHR)prop.AType      == vk::ComponentTypeKHR::eSint8 &&
+                            (vk::ComponentTypeKHR)prop.BType      == vk::ComponentTypeKHR::eSint8 &&
+@@ -7945,7 +7983,7 @@ bool ggml_vk_flash_attn_coopmat_shmem_support(const vk_device& device, const vk_
+     const uint32_t Br = params.block_rows;
+     const uint32_t Bc = params.block_cols;
+ 
+-    const uint32_t MatBr = 16, MatBc = 16;
++    const uint32_t MatBr = 16, MatBc = params.mat_m ? params.mat_m : 16;   // MatBc = M of the tile (8 on devices that only offer 8x16x16)
+ 
+     const uint32_t row_split = Bc / MatBc;
+ 
+@@ -7969,13 +8007,13 @@ bool ggml_vk_flash_attn_coopmat_shmem_support(const vk_device& device, const vk_
+     const uint32_t sfsh = Bc * sfshstride * acctype;
+ 
+     const uint32_t kvshstride = (params.shmem_staging ? std::max(hsk_pad, hsv_pad) : MatBr) / 4 + 2;
+-    const uint32_t vsh_stride = MatBc / 4 * row_split;
++    const uint32_t vsh_stride = MatBr / 4 * row_split;          // V staging: 16 hsv columns per subgroup (N), not M
+     const uint32_t ksh = ((kvshstride >= vsh_stride) ? (Bc * kvshstride) : (Bc * vsh_stride)) * f16vec4;
+ 
+     // BF16 PVMat accumulator is f32 (no bf16 accumulator support), so pvsh is vec4 (16 bytes)
+     const uint32_t pvsh_elem_size = (k_type == GGML_TYPE_BF16) ? 16u : f16vec4;
+     const uint32_t osh_stride = params.row_split * MatBr / 4;
+-    const uint32_t pvsh = MatBc * osh_stride * pvsh_elem_size;
++    const uint32_t pvsh = Br * osh_stride * pvsh_elem_size;      // all Br query rows: the P*V tile loop covers Br in M-row steps
+ 
+     const uint32_t slope = Br * acctype;
+ 
+@@ -13294,40 +13332,47 @@ static bool ggml_backend_vk_cpy_tensor_async(ggml_backend_t backend_src, ggml_ba
+     return false;
+ }
+ 
+-void ggml_vk_synchronize(ggml_backend_vk_context * ctx) {
+-    VK_LOG_DEBUG("ggml_vk_synchronize()");
++// ggml_vk_synchronize in two halves, so a caller driving several backends can submit all of them before waiting on
++// any (the two-device all-reduce below). ggml_vk_synchronize() is the submit half followed by the wait half.
++struct vk_sync_ticket {
++    bool                do_transfer = false;
++    bool                pending     = false;
++    vk_context          compute_ctx;
++    vk_command_buffer * cmd_buf     = nullptr;
++};
+ 
+-    bool do_transfer = !ctx->compute_ctx.expired();
++static vk_sync_ticket ggml_vk_synchronize_submit(ggml_backend_vk_context * ctx) {
++    vk_sync_ticket t;
++    t.do_transfer = !ctx->compute_ctx.expired();
+ 
+     if (ggml_vk_submit_transfer_ctx(ctx)) {
+         ctx->submit_pending = true;
+     }
+ 
+-    vk_context compute_ctx;
+-    vk_command_buffer* cmd_buf = nullptr;
+-    if (do_transfer) {
+-        compute_ctx = ctx->compute_ctx.lock();
+-        if (compute_ctx->s) {
+-            cmd_buf = compute_ctx->s->buffer;
++    if (t.do_transfer) {
++        t.compute_ctx = ctx->compute_ctx.lock();
++        if (t.compute_ctx->s) {
++            t.cmd_buf = t.compute_ctx->s->buffer;
+         }
+ 
+-        ggml_vk_ctx_end(compute_ctx);
++        ggml_vk_ctx_end(t.compute_ctx);
+ 
+-        for (auto& cpy : compute_ctx->in_memcpys) {
++        for (auto& cpy : t.compute_ctx->in_memcpys) {
+             memcpy(cpy.dst, cpy.src, cpy.n);
+         }
+ 
+         if (ctx->device->serialize_submissions) {
+-            ggml_vk_submit(compute_ctx, ctx->fence);
++            ggml_vk_submit(t.compute_ctx, ctx->fence);
+             VK_CHECK(ctx->device->device.waitForFences({ ctx->fence }, true, UINT64_MAX), "synchronize waitForFences", ctx->device);
+             ctx->device->device.resetFences({ ctx->fence });
+         } else {
+-            ggml_vk_submit(compute_ctx, {});
++            ggml_vk_submit(t.compute_ctx, {});
+         }
+         ctx->submit_pending = true;
+     }
+ 
+-    if (ctx->submit_pending) {
++    t.pending = ctx->submit_pending;
++    if (t.pending) {
+         if (ctx->device->serialize_submissions) {
+             ctx->submit_pending = false;
+         } else if (ctx->device->async_use_transfer_queue && ctx->transfer_semaphore_last_submitted < ctx->transfer_semaphore.value) {
+@@ -13347,24 +13392,36 @@ void ggml_vk_synchronize(ggml_backend_vk_context * ctx) {
+         } else {
+             ctx->device->compute_queue->handle->submit({}, ctx->fence);
+         }
++    }
++    return t;
++}
++
++static void ggml_vk_synchronize_wait(ggml_backend_vk_context * ctx, vk_sync_ticket & t) {
++    if (t.pending) {
+         if (!ctx->device->serialize_submissions) {
+             ggml_vk_wait_for_fence(ctx);
+         }
+         ctx->submit_pending = false;
+-        if (cmd_buf) {
+-            cmd_buf->in_use = false;
+-            cmd_buf->buf.reset();
++        if (t.cmd_buf) {
++            t.cmd_buf->in_use = false;
++            t.cmd_buf->buf.reset();
+         }
+     }
+ 
+-    if (do_transfer) {
+-        for (auto& cpy : compute_ctx->out_memcpys) {
++    if (t.do_transfer) {
++        for (auto& cpy : t.compute_ctx->out_memcpys) {
+             memcpy(cpy.dst, cpy.src, cpy.n);
+         }
+         ctx->compute_ctx.reset();
+     }
+ }
+ 
++void ggml_vk_synchronize(ggml_backend_vk_context * ctx) {
++    VK_LOG_DEBUG("ggml_vk_synchronize()");
++    vk_sync_ticket t = ggml_vk_synchronize_submit(ctx);
++    ggml_vk_synchronize_wait(ctx, t);
++}
++
+ static void ggml_backend_vk_synchronize(ggml_backend_t backend) {
+     VK_LOG_DEBUG("ggml_backend_vk_synchronize()");
+     ggml_backend_vk_context * ctx = (ggml_backend_vk_context *)backend->context;
+@@ -16060,11 +16117,541 @@ static ggml_backend_dev_t ggml_backend_vk_reg_get_device(ggml_backend_reg_t reg,
+     return devices[device];
+ }
+ 
++// Tensor parallelism (--split-mode tensor): all-reduce for exactly two Vulkan devices.
++//
++// Vulkan cannot copy between two devices, so the meta backend's generic all-reduce stops both devices several times
++// per exchange: synchronize both, read one partial back to the CPU, write it to the other device, and the same the
++// other way. Measured on two Arc Pro B60s (Windows): ~190 us per exchange, two exchanges per layer.
++//
++// Here both devices import the same block of host memory (VK_EXT_external_memory_host), a ring of slots per device:
++//   1. each device copies its partial into its own slot, queued behind the subgraph that produced it
++//   2. submit both devices
++//   3. each device copies the other device's slot into a local buffer and adds it to its partial, queued; the next
++//      subgraph runs behind it
++// Three modes, chosen at init:
++//   events (default): a page of host memory holds a "written" and a "read" counter per device, which a device bumps
++//          with vkCmdFillBuffer after its copy. A relay thread reads the counters and sets a VkEvent on the other
++//          device, whose queue waits for it with vkCmdWaitEvents inside the already-running submission: no semaphore
++//          wait, so the OS scheduler never holds a submission back. "read" keeps the ring from being overwritten
++//          before it has been read. (A shader polling the counters instead would be simpler, but on the Intel
++//          Windows driver a device's polls keep returning a stale cached value for the other device's writes, with
++//          volatile, with atomics and on the uncached memory type alike; and Vulkan's external semaphores import
++//          between two physical devices but share nothing. See docs/two-card-exchange.md.)
++//   relay (GGML_VK_COMM_RELAY=1): timeline semaphores: each device signals its own, the other waits in-queue on a
++//          mirror that the relay thread host-signals. The semaphore wait costs a scheduler round trip per exchange.
++//   sync  (GGML_VK_COMM_SYNC=1, or the device serializes submissions): step 2 is one submit + wait on both devices.
++// Anything else (other device counts, non-F32, non-contiguous, no external_memory_host) gets nullptr/false and the
++// meta backend uses its generic all-reduce. GGML_VK_DISABLE_COMM=1 forces the generic path, for A/B races.
++
++struct ggml_vk_comm_context {
++    ggml_backend_t        backends[2] = {};
++    bool                  async       = false;
++    bool                  events      = false;   // async through host counters + VkEvents (else semaphores)
++    int                   n_slots     = 1;       // ring depth per device (async, set by reserve), 1 in sync mode
++    size_t                failed_bytes = 0;      // smallest tensor size whose slots could not be set up (0: none)
++    uint64_t              seq         = 0;       // exchanges so far; the counter value of the current one
++    uint8_t *             host_alloc  = nullptr; // the slots, as returned by malloc
++    uint8_t *             host_mem    = nullptr; // aligned; device j's slot k at (j*n_slots + k)*slot_size
++    size_t                slot_size   = 0;
++    vk_buffer             host_buf[2];           // host_mem as a buffer on each device
++    ggml_backend_buffer_t tmp_buf[2]  = {};      // on each device: where the other device's partial lands
++    ggml_tensor           node_tmp[2];
++    ggml_tensor           node_add[2];
++    ggml_context *        gctx        = nullptr; // holds the two one-node graphs
++    ggml_cgraph *         graph[2]    = {};
++
++    // events mode: the counter page (its own import so the ring can regrow without moving it)
++    uint8_t *             flag_alloc  = nullptr;
++    uint8_t *             flag_mem    = nullptr;
++    size_t                flag_bytes  = 0;
++    vk_buffer             flag_buf[2];
++    static constexpr int  n_events    = 256;     // ring of events per device and kind; exchanges in flight are far fewer
++    std::vector<vk::Event> ev_written[2];        // ev_written[d][s % n_events]: device d may read the other's slot of exchange s
++    std::vector<vk::Event> ev_read[2];           // ev_read[d][s % n_events]: the other device has read device d's slot of exchange s
++    uint64_t              relayed_written[2] = {}; // how far the relay has turned each device's counters into events
++    uint64_t              relayed_read[2]    = {};
++
++    // relay mode: sem_written[j][j] is signalled by device j's queue when its slot holds exchange seq; sem_written[j][1-j]
++    // is the mirror on the other device, host-signalled by the relay thread, that device 1-j's queue waits on.
++    // sem_read likewise for "device j has read the other's slot of exchange seq".
++    vk::Semaphore         sem_written[2][2];
++    vk::Semaphore         sem_read[2][2];
++    PFN_vkGetSemaphoreCounterValue pfn_counter[2] = {};
++    PFN_vkSignalSemaphore          pfn_signal[2]  = {};
++
++    std::thread           relay;
++    std::atomic<bool>     relay_stop { false };
++
++    size_t slot_offset(int j, uint64_t s) const { return (j*n_slots + (size_t) (s % n_slots)) * slot_size; }
++
++    // counters in the flag page, as uint indices (256 bytes apart so no two share a cache line)
++    static uint32_t written_idx(int j) { return j * 64; }
++    static uint32_t read_idx(int j)    { return 128 + j * 64; }
++};
++
++static void ggml_vk_comm_release_buffers(ggml_vk_comm_context * cc) {
++    for (int j = 0; j < 2; j++) {
++        ggml_vk_destroy_buffer(cc->host_buf[j]);
++        if (cc->tmp_buf[j] != nullptr) {
++            ggml_backend_buffer_free(cc->tmp_buf[j]);
++            cc->tmp_buf[j] = nullptr;
++        }
++    }
++    free(cc->host_alloc);
++    cc->host_alloc = nullptr;
++    cc->host_mem   = nullptr;
++    cc->slot_size  = 0;
++}
++
++static size_t ggml_vk_comm_import_alignment(const ggml_vk_comm_context * cc) {
++    size_t align = 1;
++    for (int j = 0; j < 2; j++) {
++        const ggml_backend_vk_context * ctx = (const ggml_backend_vk_context *) cc->backends[j]->context;
++        align = std::max(align, (size_t) ctx->device->min_imported_host_pointer_alignment);
++    }
++    return align;
++}
++
++// Grow the shared slots and the per-device landing buffers to hold nbytes. Both devices must be idle.
++// The ring is as deep as a 64 MB per-device budget allows, between 2 and 256 slots: during prompt processing a slot
++// is megabytes (then a few slots, each exchange taking long enough that the ring never stalls), during generation
++// it is kilobytes (then 256). Any depth >= 2 is correct; the "read" signals guard reuse.
++static bool ggml_vk_comm_reserve(ggml_vk_comm_context * cc, size_t nbytes) {
++    if (nbytes <= cc->slot_size) {
++        return true;
++    }
++    if (cc->failed_bytes != 0 && nbytes >= cc->failed_bytes) {
++        return false; // already failed at this size; do not retry every exchange
++    }
++    ggml_vk_comm_release_buffers(cc);
++
++    const size_t align = ggml_vk_comm_import_alignment(cc);
++    const size_t slot  = GGML_PAD(nbytes, align);
++    if (cc->async) {
++        const size_t budget = 64u * 1024 * 1024;
++        cc->n_slots = (int) std::max<size_t>(2, std::min<size_t>(ggml_vk_comm_context::n_events, budget / slot));
++    }
++
++    const size_t host_size = 2*cc->n_slots*slot;
++    cc->host_alloc = (uint8_t *) malloc(host_size + align);
++    if (cc->host_alloc == nullptr) {
++        return false;
++    }
++    cc->host_mem = (uint8_t *) GGML_PAD((uintptr_t) cc->host_alloc, align);
++
++    for (int j = 0; j < 2; j++) {
++        ggml_backend_vk_context * ctx = (ggml_backend_vk_context *) cc->backends[j]->context;
++        cc->host_buf[j] = ggml_vk_buffer_from_host_ptr(ctx->device, cc->host_mem, host_size, /*cached =*/ false);
++        cc->tmp_buf[j]  = ggml_backend_alloc_buffer(cc->backends[j], slot);
++        if (cc->host_buf[j] == nullptr || cc->tmp_buf[j] == nullptr) {
++            GGML_LOG_WARN("%s: could not set up %d x %zu-byte shared slots on device %d, using the generic all-reduce for tensors this size\n", __func__, cc->n_slots, slot, j);
++            ggml_vk_comm_release_buffers(cc);
++            cc->failed_bytes = nbytes;
++            return false;
++        }
++    }
++    cc->slot_size = slot;
++    return true;
++}
++
++// A timeline semaphore on device `owner` (signalled by its queue) and its mirror on the other device (host-signalled
++// by the relay thread, waited on by that device's queue). Both start at 0.
++static bool ggml_vk_comm_make_pair(ggml_vk_comm_context * cc, int owner, vk::Semaphore out[2]) {
++    for (int d = 0; d < 2; d++) {
++        vk::Device dev = ((ggml_backend_vk_context *) cc->backends[d]->context)->device->device;
++        vk::SemaphoreTypeCreateInfo tci{ vk::SemaphoreType::eTimeline, 0 };
++        vk::SemaphoreCreateInfo ci{};
++        ci.setPNext(&tci);
++        try {
++            out[d] = dev.createSemaphore(ci);
++        } catch (const vk::SystemError &) {
++            return false;
++        }
++    }
++    GGML_UNUSED(owner);
++    return true;
++}
++
++static void ggml_vk_comm_destroy_semaphores(ggml_vk_comm_context * cc) {
++    for (int j = 0; j < 2; j++) {
++        for (int d = 0; d < 2; d++) {
++            vk::Device dev = ((ggml_backend_vk_context *) cc->backends[d]->context)->device->device;
++            if (cc->sem_written[j][d]) {
++                dev.destroySemaphore(cc->sem_written[j][d]);
++                cc->sem_written[j][d] = nullptr;
++            }
++            if (cc->sem_read[j][d]) {
++                dev.destroySemaphore(cc->sem_read[j][d]);
++                cc->sem_read[j][d] = nullptr;
++            }
++        }
++    }
++}
++
++static void ggml_vk_comm_destroy_events(ggml_vk_comm_context * cc) {
++    for (int d = 0; d < 2; d++) {
++        vk::Device dev = ((ggml_backend_vk_context *) cc->backends[d]->context)->device->device;
++        for (vk::Event & e : cc->ev_written[d]) {
++            dev.destroyEvent(e);
++        }
++        for (vk::Event & e : cc->ev_read[d]) {
++            dev.destroyEvent(e);
++        }
++        cc->ev_written[d].clear();
++        cc->ev_read[d].clear();
++        ggml_vk_destroy_buffer(cc->flag_buf[d]);
++    }
++    free(cc->flag_alloc);
++    cc->flag_alloc = nullptr;
++    cc->flag_mem   = nullptr;
++}
++
++// events mode: the counter page and the event rings
++static bool ggml_vk_comm_setup_events(ggml_vk_comm_context * cc) {
++    const size_t align = ggml_vk_comm_import_alignment(cc);
++    cc->flag_bytes = GGML_PAD(std::max<size_t>(4096, align), align);
++    cc->flag_alloc = (uint8_t *) malloc(cc->flag_bytes + align);
++    if (cc->flag_alloc == nullptr) {
++        return false;
++    }
++    cc->flag_mem = (uint8_t *) GGML_PAD((uintptr_t) cc->flag_alloc, align);
++    memset(cc->flag_mem, 0, cc->flag_bytes);
++    for (int d = 0; d < 2; d++) {
++        ggml_backend_vk_context * ctx = (ggml_backend_vk_context *) cc->backends[d]->context;
++        cc->flag_buf[d] = ggml_vk_buffer_from_host_ptr(ctx->device, cc->flag_mem, cc->flag_bytes, /*cached =*/ false);
++        if (cc->flag_buf[d] == nullptr) {
++            return false;
++        }
++        try {
++            for (int k = 0; k < ggml_vk_comm_context::n_events; k++) {
++                cc->ev_written[d].push_back(ctx->device->device.createEvent({}));
++                cc->ev_read[d].push_back(ctx->device->device.createEvent({}));
++            }
++        } catch (const vk::SystemError &) {
++            return false;
++        }
++    }
++    return true;
++}
++
++// The relay. events mode: when a device's "written" or "read" counter advances, set the event the other device is
++// waiting on. relay mode: host-signal the mirror semaphore. Spins on one core; a counter read is nanoseconds, a
++// semaphore counter read a few microseconds.
++static void ggml_vk_comm_relay(ggml_vk_comm_context * cc) {
++    VkDevice dev[2];
++    for (int d = 0; d < 2; d++) {
++        dev[d] = static_cast<VkDevice>(((ggml_backend_vk_context *) cc->backends[d]->context)->device->device);
++    }
++    const volatile uint32_t * flags = (const volatile uint32_t *) cc->flag_mem;
++    uint64_t sem_last[2][2] = {}; // relay mode: [written/read][owner]
++
++    int idle = 0;
++    while (!cc->relay_stop.load(std::memory_order_relaxed)) {
++        bool advanced = false;
++        for (int j = 0; j < 2; j++) {
++            if (cc->events) {
++                // device j wrote exchange s: device 1-j may read it
++                const uint32_t w = flags[ggml_vk_comm_context::written_idx(j)];
++                while ((uint32_t) cc->relayed_written[j] != w) {
++                    const uint64_t s = ++cc->relayed_written[j];
++                    vk::Device(dev[1 - j]).setEvent(cc->ev_written[1 - j][s % ggml_vk_comm_context::n_events]);
++                    advanced = true;
++                }
++                // device j read exchange s of the other's slot: device 1-j may overwrite that slot
++                const uint32_t r = flags[ggml_vk_comm_context::read_idx(j)];
++                while ((uint32_t) cc->relayed_read[j] != r) {
++                    const uint64_t s = ++cc->relayed_read[j];
++                    vk::Device(dev[1 - j]).setEvent(cc->ev_read[1 - j][s % ggml_vk_comm_context::n_events]);
++                    advanced = true;
++                }
++            } else {
++                const vk::Semaphore src[2]    = { cc->sem_written[j][j],     cc->sem_read[j][j]     };
++                const vk::Semaphore mirror[2] = { cc->sem_written[j][1 - j], cc->sem_read[j][1 - j] };
++                for (int k = 0; k < 2; k++) {
++                    uint64_t v = 0;
++                    if (cc->pfn_counter[j](dev[j], src[k], &v) == VK_SUCCESS && v > sem_last[k][j]) {
++                        VkSemaphoreSignalInfo si = { VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO, nullptr, mirror[k], v };
++                        cc->pfn_signal[1 - j](dev[1 - j], &si);
++                        sem_last[k][j] = v;
++                        advanced = true;
++                    }
++                }
++            }
++        }
++        if (advanced) {
++            idle = 0;
++        } else if (++idle > 2000) {
++            std::this_thread::yield(); // nothing moving (between tokens, or the model is loading): give the core up
++        }
++    }
++}
++
++// events mode: bump the counter at byte offset `off` of the flag page to value, after everything this queue has
++// copied so far, and make it visible outside the device.
++static void ggml_vk_comm_set_flag(ggml_vk_comm_context * cc, vk_context & subctx, int dev, size_t off, uint64_t value) {
++    // memory barriers as braced pairs: windows.h defines MemoryBarrier as a macro, so vk::MemoryBarrier cannot be named
++    vk::CommandBuffer & cb = subctx->s->buffer->buf;
++    cb.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {},
++                       { { { vk::AccessFlagBits::eTransferWrite }, { vk::AccessFlagBits::eTransferWrite } } }, {}, {});
++    cb.fillBuffer(cc->flag_buf[dev]->buffer, off, 4, (uint32_t) value);
++    cb.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer | vk::PipelineStageFlagBits::eHost, {},
++                       { { { vk::AccessFlagBits::eTransferWrite }, { vk::AccessFlagBits::eTransferRead | vk::AccessFlagBits::eTransferWrite | vk::AccessFlagBits::eHostRead } } }, {}, {});
++}
++
++// events mode: queue a wait for a host-set event, then reset it for its next use (the ring is 256 deep, so the
++// reset has long executed before the relay sets the event again).
++static void ggml_vk_comm_wait_event(vk_context & subctx, vk::Event event) {
++    vk::CommandBuffer & cb = subctx->s->buffer->buf;
++    cb.waitEvents({ event }, vk::PipelineStageFlagBits::eHost, vk::PipelineStageFlagBits::eAllCommands,
++                  { { { vk::AccessFlagBits::eHostWrite }, { vk::AccessFlagBits::eTransferRead | vk::AccessFlagBits::eTransferWrite | vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite } } }, {}, {});
++    cb.resetEvent(event, vk::PipelineStageFlagBits::eAllCommands);
++}
++
++static void * ggml_backend_vk_comm_init(ggml_backend_t * backends, size_t n_backends) {
++    if (n_backends != 2 || getenv("GGML_VK_DISABLE_COMM") != nullptr) {
++        return nullptr;
++    }
++    bool can_async   = getenv("GGML_VK_COMM_SYNC") == nullptr;
++    const bool relay = getenv("GGML_VK_COMM_RELAY") != nullptr;
++    for (size_t j = 0; j < n_backends; j++) {
++        if (!ggml_backend_is_vk(backends[j])) {
++            return nullptr;
++        }
++        const ggml_backend_vk_context * ctx = (const ggml_backend_vk_context *) backends[j]->context;
++        if (!ctx->device->external_memory_host) {
++            return nullptr;
++        }
++        if (ctx->device->serialize_submissions) {
++            can_async = false;
++        }
++    }
++
++    ggml_vk_comm_context * cc = new ggml_vk_comm_context;
++    cc->backends[0] = backends[0];
++    cc->backends[1] = backends[1];
++
++    if (can_async && !relay) {
++        cc->async  = true;
++        cc->events = ggml_vk_comm_setup_events(cc);
++        if (!cc->events) {
++            GGML_LOG_WARN("%s: could not set up the counter page or the events; all-reduce will stop the CPU once per exchange\n", __func__);
++            ggml_vk_comm_destroy_events(cc);
++            cc->async = false;
++        }
++    } else if (can_async) {
++        cc->async = true;
++        for (int d = 0; d < 2 && cc->async; d++) {
++            VkDevice dev = static_cast<VkDevice>(((ggml_backend_vk_context *) backends[d]->context)->device->device);
++            cc->pfn_counter[d] = (PFN_vkGetSemaphoreCounterValue) vkGetDeviceProcAddr(dev, "vkGetSemaphoreCounterValue");
++            cc->pfn_signal[d]  = (PFN_vkSignalSemaphore)          vkGetDeviceProcAddr(dev, "vkSignalSemaphore");
++            if (cc->pfn_counter[d] == nullptr) {
++                cc->pfn_counter[d] = (PFN_vkGetSemaphoreCounterValue) vkGetDeviceProcAddr(dev, "vkGetSemaphoreCounterValueKHR");
++            }
++            if (cc->pfn_signal[d] == nullptr) {
++                cc->pfn_signal[d] = (PFN_vkSignalSemaphore) vkGetDeviceProcAddr(dev, "vkSignalSemaphoreKHR");
++            }
++            cc->async = cc->pfn_counter[d] != nullptr && cc->pfn_signal[d] != nullptr;
++        }
++        for (int j = 0; j < 2 && cc->async; j++) {
++            cc->async = ggml_vk_comm_make_pair(cc, j, cc->sem_written[j]) && ggml_vk_comm_make_pair(cc, j, cc->sem_read[j]);
++        }
++        if (!cc->async) {
++            GGML_LOG_WARN("%s: no timeline semaphore host signalling; all-reduce will stop the CPU once per exchange\n", __func__);
++            ggml_vk_comm_destroy_semaphores(cc);
++        }
++    }
++    if (cc->async) {
++        cc->relay = std::thread(ggml_vk_comm_relay, cc);
++    }
++    cc->n_slots = cc->async ? ggml_vk_comm_context::n_events : 1;
++
++    const ggml_init_params params = { 2*ggml_graph_overhead_custom(1, false), nullptr, /*no_alloc =*/ true };
++    cc->gctx = ggml_init(params);
++    for (int j = 0; j < 2; j++) {
++        cc->graph[j] = ggml_new_graph_custom(cc->gctx, 1, false);
++    }
++    return cc;
++}
++
++static void ggml_backend_vk_comm_free(void * comm_ctx) {
++    ggml_vk_comm_context * cc = (ggml_vk_comm_context *) comm_ctx;
++    if (cc == nullptr) {
++        return;
++    }
++    for (int j = 0; j < 2; j++) {
++        ggml_backend_synchronize(cc->backends[j]); // needs the relay alive: queued waits are satisfied through it
++    }
++    if (cc->relay.joinable()) {
++        cc->relay_stop.store(true);
++        cc->relay.join();
++    }
++    ggml_vk_comm_release_buffers(cc);
++    ggml_vk_comm_destroy_semaphores(cc);
++    ggml_vk_comm_destroy_events(cc);
++    ggml_free(cc->gctx);
++    delete cc;
++}
++
++static bool ggml_backend_vk_comm_allreduce_tensor(void * comm_ctx, ggml_tensor ** tensors) {
++    ggml_vk_comm_context * cc = (ggml_vk_comm_context *) comm_ctx;
++    ggml_tensor * t[2] = { tensors[0], tensors[1] };
++
++    for (int j = 0; j < 2; j++) {
++        if (t[j]->type != GGML_TYPE_F32 || !ggml_is_contiguous(t[j]) || !ggml_backend_buffer_is_vk(t[j]->buffer)) {
++            return false;
++        }
++        if ((t[j]->flags & GGML_TENSOR_FLAG_COMPUTE) == 0) {
++            return false; // a disabled zero-size slice: the generic path zeroes it first
++        }
++    }
++    if (ggml_nelements(t[0]) != ggml_nelements(t[1])) {
++        return false;
++    }
++    const size_t nbytes = ggml_nbytes(t[0]);
++    if (nbytes == 0) {
++        return true;
++    }
++
++    ggml_backend_vk_context * ctx[2] = {
++        (ggml_backend_vk_context *) cc->backends[0]->context,
++        (ggml_backend_vk_context *) cc->backends[1]->context,
++    };
++
++    if (nbytes > cc->slot_size) {
++        for (int j = 0; j < 2; j++) {
++            ggml_backend_synchronize(cc->backends[j]); // the old landing buffers may still be in use
++        }
++        if (!ggml_vk_comm_reserve(cc, nbytes)) {
++            return false;
++        }
++    }
++
++    const uint64_t seq = ++cc->seq;
++    const int n_ev = ggml_vk_comm_context::n_events;
++
++    // 1. each device: its partial -> its slot, queued behind the subgraph that wrote it. async: this submission
++    //    announces "written" = seq, and (once the ring has wrapped) first waits for the other device to have read
++    //    what was in this slot last time round
++    for (int j = 0; j < 2; j++) {
++        vk_context subctx = ggml_vk_get_compute_ctx(ctx[j]);
++        if (cc->async && seq > (uint64_t) cc->n_slots) {
++            if (cc->events) {
++                ggml_vk_comm_wait_event(subctx, cc->ev_read[j][(seq - cc->n_slots) % n_ev]);
++            } else {
++                subctx->s->wait_semaphores.push_back({ cc->sem_read[1 - j][j], seq - cc->n_slots });
++            }
++        }
++        ggml_vk_sync_buffers(ctx[j], subctx);
++        vk_buffer src = ((ggml_backend_vk_buffer_context *) t[j]->buffer->context)->dev_buffer;
++        ggml_vk_buffer_copy_async(subctx, cc->host_buf[j], cc->slot_offset(j, seq), src, vk_tensor_offset(t[j]) + t[j]->view_offs, nbytes);
++        if (cc->async) {
++            if (cc->events) {
++                ggml_vk_comm_set_flag(cc, subctx, j, 4 * ggml_vk_comm_context::written_idx(j), seq);
++            } else {
++                subctx->s->signal_semaphores.push_back({ cc->sem_written[j][j], seq });
++            }
++        }
++    }
++
++    // 2. submit both devices. sync: then wait for both (the one stop). async: no wait
++    if (cc->async) {
++        for (int j = 0; j < 2; j++) {
++            if (ggml_vk_submit_transfer_ctx(ctx[j])) {
++                ctx[j]->submit_pending = true;
++            }
++            vk_context subctx = ctx[j]->compute_ctx.lock();
++            ggml_vk_ctx_end(subctx);
++            for (auto & cpy : subctx->in_memcpys) {
++                memcpy(cpy.dst, cpy.src, cpy.n);
++            }
++            GGML_ASSERT(subctx->out_memcpys.empty()); // host reads are only queued around a synchronize
++            ggml_vk_submit(subctx, {});
++            ctx[j]->submit_pending = true;
++            ctx[j]->compute_ctx.reset();
++        }
++    } else {
++        vk_sync_ticket ticket[2];
++        for (int j = 0; j < 2; j++) {
++            ticket[j] = ggml_vk_synchronize_submit(ctx[j]);
++        }
++        for (int j = 0; j < 2; j++) {
++            ggml_vk_synchronize_wait(ctx[j], ticket[j]);
++            ggml_vk_graph_cleanup(ctx[j]);
++        }
++    }
++
++    // 3. each device: the other's slot -> local buffer, then partial += it; queued. async: this submission first
++    //    waits (in-queue) for the other device's "written" = seq, and announces "read" = seq when the copy is done
++    for (int j = 0; j < 2; j++) {
++        vk_context subctx = ggml_vk_get_compute_ctx(ctx[j]);
++        if (cc->async) {
++            if (cc->events) {
++                ggml_vk_comm_wait_event(subctx, cc->ev_written[j][seq % n_ev]);
++            } else {
++                subctx->s->wait_semaphores.push_back({ cc->sem_written[1 - j][j], seq });
++                subctx->s->signal_semaphores.push_back({ cc->sem_read[j][j], seq });
++            }
++        }
++        vk_buffer tmp = ((ggml_backend_vk_buffer_context *) cc->tmp_buf[j]->context)->dev_buffer;
++        ggml_vk_buffer_copy_async(subctx, tmp, 0, cc->host_buf[j], cc->slot_offset(1 - j, seq), nbytes);
++        ggml_vk_sync_buffers(ctx[j], subctx);
++        if (cc->events) {
++            ggml_vk_comm_set_flag(cc, subctx, j, 4 * ggml_vk_comm_context::read_idx(j), seq);
++        }
++
++        ggml_tensor * node_tmp = &cc->node_tmp[j];
++        memset(node_tmp, 0, sizeof(ggml_tensor));
++        node_tmp->type = GGML_TYPE_F32;
++        for (int k = 0; k < GGML_MAX_DIMS; k++) {
++            node_tmp->ne[k] = t[j]->ne[k];
++            node_tmp->nb[k] = t[j]->nb[k];
++        }
++        node_tmp->buffer = cc->tmp_buf[j];
++        node_tmp->data   = ggml_backend_buffer_get_base(cc->tmp_buf[j]);
++
++        ggml_tensor * node_add = &cc->node_add[j];
++        memset(node_add, 0, sizeof(ggml_tensor));
++        node_add->type = GGML_TYPE_F32;
++        for (int k = 0; k < GGML_MAX_DIMS; k++) {
++            node_add->ne[k] = t[j]->ne[k];
++            node_add->nb[k] = t[j]->nb[k];
++        }
++        node_add->op        = GGML_OP_ADD;
++        node_add->src[0]    = t[j];
++        node_add->src[1]    = node_tmp;
++        node_add->view_src  = t[j]->view_src != nullptr ? t[j]->view_src : t[j];
++        node_add->view_offs = t[j]->view_offs;
++        node_add->flags    |= GGML_TENSOR_FLAG_COMPUTE;
++        ggml_backend_view_init(node_add);
++
++        cc->graph[j]->nodes[0] = node_add;
++        cc->graph[j]->n_nodes  = 1;
++        if (ggml_backend_graph_compute_async(cc->backends[j], cc->graph[j]) != GGML_STATUS_SUCCESS) {
++            GGML_ABORT("%s: add on device %d failed", __func__, j); // half done: falling back would add twice
++        }
++    }
++    return true;
++}
++
++static void * ggml_backend_vk_reg_get_proc_address(ggml_backend_reg_t reg, const char * name) {
++    GGML_UNUSED(reg);
++    if (strcmp(name, "ggml_backend_comm_init") == 0) {
++        return (void *) ggml_backend_vk_comm_init;
++    }
++    if (strcmp(name, "ggml_backend_comm_free") == 0) {
++        return (void *) ggml_backend_vk_comm_free;
++    }
++    if (strcmp(name, "ggml_backend_comm_allreduce_tensor") == 0) {
++        return (void *) ggml_backend_vk_comm_allreduce_tensor;
++    }
++    return nullptr;
++}
++
+ static const struct ggml_backend_reg_i ggml_backend_vk_reg_i = {
+     /* .get_name         = */ ggml_backend_vk_reg_get_name,
+     /* .get_device_count = */ ggml_backend_vk_reg_get_device_count,
+     /* .get_device       = */ ggml_backend_vk_reg_get_device,
+-    /* .get_proc_address = */ NULL,
++    /* .get_proc_address = */ ggml_backend_vk_reg_get_proc_address,
+ };
+ 
+ ggml_backend_reg_t ggml_backend_vk_reg() {
+diff --git a/ggml/src/ggml-vulkan/vulkan-shaders/flash_attn_cm1.comp b/ggml/src/ggml-vulkan/vulkan-shaders/flash_attn_cm1.comp
+index aa9dd62..6a69c4b 100644
+--- a/ggml/src/ggml-vulkan/vulkan-shaders/flash_attn_cm1.comp
++++ b/ggml/src/ggml-vulkan/vulkan-shaders/flash_attn_cm1.comp
+@@ -22,9 +22,14 @@
+ #include "flash_attn_dequant.glsl"
+ #endif
+ 
+-// These need to be supported N,M values for a MatBc x MatBr x 16 coopmatmuladd
++// The coopmat tile is M x N x K = MatM x 16 x 16. Both products in this shader are (MatBc x 16) * (16 x MatBr):
++//   K * Q^T : A = K rows (MatBc = MatM KV rows per subgroup), B = Q^T (16 head dims x MatBr = 16 queries)
++//   P * V   : A = P (MatM query rows x 16 KV), B = V (16 KV x MatBr = 16 head dims)
++// MatM is 16 where the device offers 16x16x16, and 8 where it offers only 8x16x16 for f16 (observed on Intel Xe2, Arc Pro B60).
++// With MatM = 8 the P*V product walks the Br query rows in two 8-row tiles; the KV reduction stays in chunks of 16 (the tile's K).
++layout (constant_id = 16) const uint32_t MatM = 16;
+ const uint32_t MatBr = 16;
+-const uint32_t MatBc = 16;
++const uint32_t MatBc = MatM;
+ 
+ const uint32_t rows_per_thread = Br / row_split;
+ const uint32_t cols_per_iter = gl_WorkGroupSize.x / row_split;
+@@ -53,12 +58,12 @@ shared ACC_TYPEV4 sfsh[Bc * sfshstride];
+ 
+ const uint32_t D_pad = HSK_pad > HSV_pad ? HSK_pad : HSV_pad;
+ const uint32_t kvsh_stride = (SHMEM_STAGING != 0 ? D_pad : MatBr) / 4 + 2;
+-const uint v_cols = MatBc / 4 * row_split; // total cols, 4 vec4s per MatBc * number of subgroups
++const uint v_cols = MatBr / 4 * row_split; // total cols, 4 vec4s per 16 head dims (N) * number of subgroups
+ const uint vsh_stride = v_cols;
+ shared FLOAT_TYPEV4 kvsh[(kvsh_stride >= vsh_stride) ? (Bc * kvsh_stride) : (Bc * vsh_stride)];
+ 
+ const uint32_t osh_stride = row_split * MatBr / 4;
+-shared O_TYPEV4 pvsh[MatBc * osh_stride];
++shared O_TYPEV4 pvsh[Br * osh_stride];      // every query row: the P*V loop covers Br in MatM-row tiles
+ 
+ shared ACC_TYPE slope[Br];
+ 
+@@ -436,14 +441,12 @@ void main() {
+         }
+         barrier();
+ 
+-        const uint num_hsv_tiles = (HSV + MatBc * row_split - 1) / (MatBc * row_split); // round up
++        const uint num_hsv_tiles = (HSV + MatBr * row_split - 1) / (MatBr * row_split); // round up: 16 head dims per subgroup per tile
+ 
+-        // Each subgroup handles HSV/4 columns
++        // Each subgroup handles 16 head-dim columns per tile
+         [[unroll]] for (uint32_t hsv_tile = 0; hsv_tile < num_hsv_tiles; ++hsv_tile) {
+             const uint hsv_offset = (hsv_tile * row_split + gl_SubgroupID) * 16;
+ 
+-            coopmat<O_TYPE, gl_ScopeSubgroup, MatBc, MatBr, gl_MatrixUseAccumulator> PVMat = coopmat<O_TYPE, gl_ScopeSubgroup, MatBc, MatBr, gl_MatrixUseAccumulator>(0);
+-
+             // Preload V tiles for [Bc, 16 * num subgroups]
+             const uint v_rows = Bc;
+             const uint v_total = v_rows * v_cols;
+@@ -465,7 +468,7 @@ void main() {
+ 
+                     uint32_t v_row;
+                     bool kv_active = fa_kv_index(j * Bc + row, v_row);
+-                    const uint v_col = hsv_tile * MatBc * row_split + col * 4;
++                    const uint v_col = hsv_tile * MatBr * row_split + col * 4;
+ 
+                     const uint coord = v_row * v_stride * BLOCK_SIZE_V + v_col;
+                     const uint ib = coord / BLOCK_SIZE_V;
+@@ -491,34 +494,42 @@ void main() {
+             const uint o_offset = gl_SubgroupID * MatBr / 4;
+ 
+             if (hsv_offset < HSV_pad) {
+-                [[unroll]] for (uint32_t bc_chunk = 0; bc_chunk < Bc / MatBc; ++bc_chunk) {
+-                    coopMatLoad(KMat, Psh, bc_chunk * MatBc * psh_stride, psh_stride, gl_CooperativeMatrixLayoutColumnMajor);
+-
+-                    if (SHMEM_STAGING == 0) {
+-                    if (!USE_DECODE_V && !KV_bounds_check && !USE_SPARSE) {
+-                        // F16/BF16 values can be loaded directly from global memory
+-                        const uint v_tile_row = j * Bc + bc_chunk * MatBc;
+-                        const uint v_tile_offset = v_offset / 4 + v_tile_row * v_stride / 4 + hsv_offset / 4;
+-                        coopMatLoad(QMat, data_vv4, v_tile_offset, v_stride / 4, gl_CooperativeMatrixLayoutRowMajor);
+-                    } else {
+-                        const uint v_tile_offset = bc_chunk * MatBr * v_cols + gl_SubgroupID * (MatBc / 4);
+-                        coopMatLoad(QMat, kvsh, v_tile_offset, vsh_stride, gl_CooperativeMatrixLayoutRowMajor);
+-                    }
+-                    } else {
+-                        const uint v_tile_offset = bc_chunk * MatBc * kvsh_stride + (hsv_tile * row_split + gl_SubgroupID) * (MatBc / 4);
+-                        coopMatLoad(QMat, kvsh, v_tile_offset, kvsh_stride, gl_CooperativeMatrixLayoutRowMajor);
++                // P * V for this subgroup's 16 head dims, MatM query rows at a time (one tile when MatM == Br == 16,
++                // two when MatM == 8). The reduction over KV runs in chunks of 16 (the tile's K), independent of MatM.
++                [[unroll]] for (uint32_t qt = 0; qt < Br / MatBc; ++qt) {
++                    // spelled with MatBc (== MatM) so glslang sees the same spec-constant expression as KMat's rows
++                    coopmat<O_TYPE, gl_ScopeSubgroup, MatBc, MatBr, gl_MatrixUseAccumulator> PVMat = coopmat<O_TYPE, gl_ScopeSubgroup, MatBc, MatBr, gl_MatrixUseAccumulator>(0);
++
++                    [[unroll]] for (uint32_t kc = 0; kc < Bc / 16; ++kc) {
++                        // A = P[qt*MatM .. +MatM query rows][kc*16 .. +16 KV]: Psh is [Bc][Br/4] vec4, column-major here
++                        coopMatLoad(KMat, Psh, kc * 16 * psh_stride + qt * (MatBc / 4), psh_stride, gl_CooperativeMatrixLayoutColumnMajor);
++
++                        if (SHMEM_STAGING == 0) {
++                        if (!USE_DECODE_V && !KV_bounds_check && !USE_SPARSE) {
++                            // F16/BF16 values can be loaded directly from global memory
++                            const uint v_tile_row = j * Bc + kc * 16;
++                            const uint v_tile_offset = v_offset / 4 + v_tile_row * v_stride / 4 + hsv_offset / 4;
++                            coopMatLoad(QMat, data_vv4, v_tile_offset, v_stride / 4, gl_CooperativeMatrixLayoutRowMajor);
++                        } else {
++                            const uint v_tile_offset = kc * 16 * v_cols + gl_SubgroupID * (MatBr / 4);
++                            coopMatLoad(QMat, kvsh, v_tile_offset, vsh_stride, gl_CooperativeMatrixLayoutRowMajor);
++                        }
++                        } else {
++                            const uint v_tile_offset = kc * 16 * kvsh_stride + (hsv_tile * row_split + gl_SubgroupID) * (MatBr / 4);
++                            coopMatLoad(QMat, kvsh, v_tile_offset, kvsh_stride, gl_CooperativeMatrixLayoutRowMajor);
++                        }
++
++                        PVMat = coopMatMulAdd(KMat, QMat, PVMat);
+                     }
+ 
+-                    PVMat = coopMatMulAdd(KMat, QMat, PVMat);
++                    // Store this query-row tile of PVMat to pvsh; Of picks it up below
++                    coopMatStore(PVMat, pvsh, o_offset + qt * MatBc * osh_stride, osh_stride, gl_CooperativeMatrixLayoutRowMajor);
+                 }
+-
+-                // Store PVMat to pvsh and load into Of
+-                coopMatStore(PVMat, pvsh, o_offset, osh_stride, gl_CooperativeMatrixLayoutRowMajor);
+             }
+ 
+             barrier();
+ 
+-            const uint hsv_per_tile = row_split * MatBc;
++            const uint hsv_per_tile = row_split * MatBr;
+             const uint hsv_base = hsv_tile * hsv_per_tile;
+             const uint d_values_per_tile = hsv_per_tile / 4;
+ 
